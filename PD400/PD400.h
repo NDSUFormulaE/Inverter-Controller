@@ -10,9 +10,8 @@ class PD400
   public:
     PD400(int pin);
     void Begin();
-    void dot();
-    void dash();
-    void recieve();
+    struct can_frame recieve();
+    void setSpeed(short rpm);
     MCP2515 mcp;
   private:
     struct can_frame canMsg;
