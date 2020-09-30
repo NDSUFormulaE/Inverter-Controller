@@ -1,42 +1,46 @@
 #include "Arduino.h"
 #include "PD400.h"
 #include <SPI.h>
-#include "mcp2515.h"
+#include <mcp2515.h>
 
-PD400::PD400(int pin)
-{
-  pinMode(pin, OUTPUT);
+
+PD400::PD400(int pin):mcp(pin) {
+
   _pin = pin;
 }
 
 
+
 void PD400::Begin(){
   SPI.begin();
-  mcp2515.reset();
-  mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ);
-  mcp2515.setNormalMode();
+  mcp.reset();
+  mcp.setBitrate(CAN_500KBPS, MCP_8MHZ);
+  mcp.setNormalMode();
 }
 
 
-// String[] PD400::recieve() {
-//   if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
+void PD400::recieve() {
+  if (mcp.readMessage(&canMsg) == MCP2515::ERROR_OK) {
 
-//     Serial.print(canMsg.can_id, HEX); // print ID
-//     Serial.print("    ");
-//     Serial.print(canMsg.can_dlc, HEX); // print DLC
-//     Serial.print("     ");
+    Serial.print(canMsg.can_id, HEX); // print ID
+    Serial.print("    ");
+    Serial.print(canMsg.can_dlc, HEX); // print DLC
+    Serial.print("     ");
 
-//     for (int i = 0; i < canMsg.can_dlc; i++)  { // print the data
+    for (int i = 0; i < canMsg.can_dlc; i++)  { // print the data
 
-//       Serial.print(canMsg.data[i], HEX);
-//       Serial.print(" ");
+      Serial.print(canMsg.data[i], HEX);
+      Serial.print(" ");
 
-//     }
+    }
+    return canMsg;
+    Serial.println();
+  }
+}
 
-//     Serial.println();
-//   }
-//   return receiveString;
-// }
+
+
+
 
 
 void PD400::dot()
