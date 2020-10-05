@@ -1,47 +1,48 @@
+//PD400.cpp
 #include "Arduino.h"
 #include "PD400.h"
-#include <SPI.h>
-#include <mcp2515.h>
+#include "FlexCAN_T4.h"
 
 #define pd400Address 0xFFFC
-PD400::PD400(int pin):mcp(pin) {
+
+
+PD400::PD400(int pin)
+
+{
+  
   _pin = pin;
 }
 
 
-
 void PD400::Begin(){
-  SPI.begin();
-  mcp.reset();
-  mcp.setBitrate(CAN_500KBPS, MCP_8MHZ);
-  mcp.setNormalMode();
+  Can0.begin();
+  Can0.setBaudRate(500000);
+  Can0.enableFIFO();
+  Can0.enableFIFOInterrupt();
+  Can0.onReceive(FIFO, canSniff);
+  Can0.mailboxStatus();
 }
 
 
-struct can_frame PD400::recieve() {
-  if (mcp.readMessage(&canMsg) == MCP2515::ERROR_OK) {
+CAN_message_t PD400::read(){
+Can0.events();
+  
+  // CAN_message_t msg;
+  // Can0.read(msg)
 
-    Serial.print(canMsg.can_id, HEX); // print ID
-    Serial.print("    ");
-    Serial.print(canMsg.can_dlc, HEX); // print DLC
-    Serial.print("     ");
+  // if ( Can0.read(msg) ){
+    
+  //   Serial.println("hey im returning" + msg.id);
+  //   canSniff(msg);
+  //   return msg;
+  // } 
 
-    for (int i = 0; i < canMsg.can_dlc; i++)  { // print the data
-
-      Serial.print(canMsg.data[i], HEX);
-      Serial.print(" ");
-
-    }
-    return canMsg;
-    Serial.println();
-  }
 }
 
 
 
 
 void PD400::setSpeed(short rpm){
-  struct can_frame canMsg1;
 
   if(rpm>16000){
     rpm=16000;
@@ -58,30 +59,39 @@ void PD400::setSpeed(short rpm){
   }data;
 
   data._rpm=rpm;
+  Serial.println(data._rpm);
+  Serial.println(data.b[0]);
+CAN_message_t msg;
 
+msg.id = pd400Address;
+msg.len = 8;
+msg.buf[0]=0xf4;
+msg.buf[1]=0x1b;
+msg.buf[2]=data.b[1];
+msg.buf[3]=data.b[0];
+msg.buf[4]=0xff;
+msg.buf[5]=0xff;
+msg.buf[6]=0x01;
+msg.buf[7]=0x0f;
 
-  canMsg1.can_id  = pd400Address;
-  canMsg1.can_dlc = 8;
-  canMsg1.data[0] = 0xF4;
-  canMsg1.data[1] = 0x1B;
-  canMsg1.data[2] = data.b[1];
-  canMsg1.data[3] = data.b[0];
-  canMsg1.data[4] = 0xFF;
-  canMsg1.data[5] = 0xFF;
-  canMsg1.data[6] = 0x17;
-  canMsg1.data[7] = 0x0F;
-
-  mcp.sendMessage(&canMsg1);
-
-
-
+Can0.write(msg);
 
 }
 
 
 
 
-
+static void PD400::canSniff(const CAN_message_t &msg) { // global callback
+  Serial.print("MB "); Serial.print(msg.mb);
+  Serial.print("  LEN: "); Serial.print(msg.len);
+  Serial.print(" EXT: "); Serial.print(msg.flags.extended);
+  Serial.print(" TS: "); Serial.print(msg.timestamp);
+  Serial.print(" ID: "); Serial.print(msg.id, HEX);
+  Serial.print(" Buffer: ");
+  for ( uint8_t i = 0; i < msg.len; i++ ) {
+    Serial.print(msg.buf[i], HEX); Serial.print(" ");
+  } Serial.println();
+}
 
 
 
