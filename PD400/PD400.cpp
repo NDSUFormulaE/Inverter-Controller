@@ -6,6 +6,7 @@
 #define pd400Address 0xFFFC
 
 
+
 PD400::PD400(int pin)
 
 {
@@ -25,24 +26,23 @@ void PD400::Begin(){
 
 
 CAN_message_t PD400::read(){
-Can0.events();
+  Can0.events();
   
-  // CAN_message_t msg;
-  // Can0.read(msg)
+  
+  // Can0.read(frame);
 
-  // if ( Can0.read(msg) ){
+  // if ( Can0.read(frame) ){
     
-  //   Serial.println("hey im returning" + msg.id);
-  //   canSniff(msg);
-  //   return msg;
+  //   Serial.println("hey im returning" + frame.id);
+  //   canSniff(frame);
   // } 
-
+  // return frame;
 }
 
 
 
 
-void PD400::setSpeed(short rpm){
+void PD400::setSpeed(int rpm){
 
   if(rpm>16000){
     rpm=16000;
@@ -52,36 +52,30 @@ void PD400::setSpeed(short rpm){
   }
   rpm = rpm+16000;
 
-  union cnv{
-    short _rpm;
-    byte b[2];
+ byte rpm1 = rpm;
+ byte rpm2 = rpm>>8;
 
-  }data;
 
-  data._rpm=rpm;
-  Serial.println(data._rpm);
-  Serial.println(data.b[0]);
-CAN_message_t msg;
 
-msg.id = pd400Address;
-msg.len = 8;
-msg.buf[0]=0xf4;
-msg.buf[1]=0x1b;
-msg.buf[2]=data.b[1];
-msg.buf[3]=data.b[0];
-msg.buf[4]=0xff;
-msg.buf[5]=0xff;
-msg.buf[6]=0x01;
-msg.buf[7]=0x0f;
+CAN_message_t line;
 
-Can0.write(msg);
+line.id = pd400Address;
+line.len = 8;
+line.buf[0]=0xf4;
+line.buf[1]=0x1b;
+line.buf[2]=rpm2;
+line.buf[3]=rpm1;
+line.buf[4]=0xff;
+line.buf[5]=0xff;
+line.buf[6]=0x01;
+line.buf[7]=0x0f;
+
+Can0.write(line);
 
 }
 
 
-
-
-static void PD400::canSniff(const CAN_message_t &msg) { // global callback
+ static void PD400::canSniff(const CAN_message_t &msg ) {
   Serial.print("MB "); Serial.print(msg.mb);
   Serial.print("  LEN: "); Serial.print(msg.len);
   Serial.print(" EXT: "); Serial.print(msg.flags.extended);
@@ -91,6 +85,9 @@ static void PD400::canSniff(const CAN_message_t &msg) { // global callback
   for ( uint8_t i = 0; i < msg.len; i++ ) {
     Serial.print(msg.buf[i], HEX); Serial.print(" ");
   } Serial.println();
+
+   // frame = msg;
+
 }
 
 
