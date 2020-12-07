@@ -12,7 +12,7 @@ class PD400
     void Begin();
     void setSpeed(int rpm);
     CAN_message_t read();
-    static void canSniff(const CAN_message_t &msg );
+    static void canSniff(const CAN_message_t &msg);
     static CAN_message_t frame;
   private:
     FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
