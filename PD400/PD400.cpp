@@ -2,6 +2,7 @@
 #include "Arduino.h"
 #include "PD400.h"
 #include "FlexCAN_T4.h"
+#include "Faults.h"
 
 #define pd400Address 0xFFFC
 
