@@ -2,6 +2,7 @@
 #include "Arduino.h"
 #include "PD400.h"
 #include "FlexCAN_T4.h"
+#include "Faults.h"
 
 #define pd400Address 0xFFFC
 
@@ -52,30 +53,30 @@ void PD400::setSpeed(int rpm){
   }
   rpm = rpm+16000;
 
- byte rpm1 = rpm;
- byte rpm2 = rpm>>8;
+  byte rpm1 = rpm;
+  byte rpm2 = rpm>>8;
 
 
 
-CAN_message_t line;
+  CAN_message_t line;
 
-line.id = pd400Address;
-line.len = 8;
-line.buf[0]=0xf4;
-line.buf[1]=0x1b;
-line.buf[2]=rpm2;
-line.buf[3]=rpm1;
-line.buf[4]=0xff;
-line.buf[5]=0xff;
-line.buf[6]=0x01;
-line.buf[7]=0x0f;
+  line.id = pd400Address;
+  line.len = 8;
+  line.buf[0]=0xf4;
+  line.buf[1]=0x1b;
+  line.buf[2]=rpm2;
+  line.buf[3]=rpm1;
+  line.buf[4]=0xff;
+  line.buf[5]=0xff;
+  line.buf[6]=0x01;
+  line.buf[7]=0x0f;
 
-Can0.write(line);
+  Can0.write(line);
 
 }
 
 
- static void PD400::canSniff(const CAN_message_t &msg ) {
+static void PD400::canSniff(const CAN_message_t &msg ) {
   Serial.print("MB "); Serial.print(msg.mb);
   Serial.print("  LEN: "); Serial.print(msg.len);
   Serial.print(" EXT: "); Serial.print(msg.flags.extended);
