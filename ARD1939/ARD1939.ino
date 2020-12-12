@@ -39,11 +39,11 @@ void setup()
   // Initialize the J1939 protocol including CAN settings
   if(j1939.Init(SYSTEM_TIME) == 0)
     Serial.print("CAN Controller Init OK.\n\r\n\r");
-  else
+  else{
     Serial.print("CAN Controller Init Failed.\n\r");
     delay(100);
     resetFunc();
-    
+  }    
  // Set the preferred address and address range
  j1939.SetPreferredAddress(SA_PREFERRED);
  j1939.SetAddressRange(ADDRESSRANGEBOTTOM, ADDRESSRANGETOP);
@@ -149,6 +149,7 @@ void loop()
     // Check J1939 protocol status
     switch(nJ1939Status)
     {
+
       case ADDRESSCLAIM_INPROGRESS:
       
         break;
