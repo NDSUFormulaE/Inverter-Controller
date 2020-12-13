@@ -31,3 +31,5 @@
 #define DC_LINK_PWR_STATUS            0xFFFB
 #define DC_LINK_PWR_CURRENT_STATUS    0xFFF4
 #define VOLTAGE_RMS1                  0xFFFB
+
+#define DM1                           0xFECA
