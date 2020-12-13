@@ -1,17 +1,17 @@
 // CAN Command Messages (PD400 CAN Spec 2.3.1.X) -> Sent to Inverter
-#define COMMAND1_RELTORQUE            0xEF00      // must be &'d with Inverter Source Address
-#define COMMAND2_SPEED                0xEF00      // must be &'d with Inverter Source Address
-#define COMMAND3_VOLTAGE              0xEF00      // must be &'d with Inverter Source Address
-#define COMMAND7_ABSTORQUE            0xEF00      // must be &'d with Inverter Source Address
+#define COMMAND1_RELTORQUE            0xEF00      // must be |'d with Inverter Source Address
+#define COMMAND2_SPEED                0xEF00      // must be |'d with Inverter Source Address
+#define COMMAND3_VOLTAGE              0xEF00      // must be |'d with Inverter Source Address
+#define COMMAND7_ABSTORQUE            0xEF00      // must be |'d with Inverter Source Address
 
 #define BRAKE_RESISTOR                0xFFFE
 #define TORQUE_LIMITING               0xFFFE
-#define BUS_DISSIPATION               0xEF00      // must be &'d with Inverter Source Address
-#define AC_SUPPLY_COMMAND             0xEF00      // must be &'d with Inverter Source Address
-#define AC_SUPPLY_LIMITS              0xEF00      // must be &'d with Inverter Source Address
-#define THREE_PHASE_SHORT             0xEF00      // must be &'d with Inverter Source Address
-#define DC_LINK_PWR_LIMITING          0xEF00      // must be &'d with Inverter Source Address
-#define DC_LINK_PWR_CURRENT_LIMITING  0xEF00      // must be &'d with Inverter Source Address
+#define BUS_DISSIPATION               0xEF00      // must be |'d with Inverter Source Address
+#define AC_SUPPLY_COMMAND             0xEF00      // must be |'d with Inverter Source Address
+#define AC_SUPPLY_LIMITS              0xEF00      // must be |'d with Inverter Source Address
+#define THREE_PHASE_SHORT             0xEF00      // must be |'d with Inverter Source Address
+#define DC_LINK_PWR_LIMITING          0xEF00      // must be |'d with Inverter Source Address
+#define DC_LINK_PWR_CURRENT_LIMITING  0xEF00      // must be |'d with Inverter Source Address
 
 // CAN Status Messages (PD400 CAN Spec 2.3.2.X) -> Sent From Inverter
 #define STATUS1_RELTORQUE_SPEED       0xFFFE
