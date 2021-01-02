@@ -128,53 +128,48 @@ void loop()
   */
   
   // Test Periodic Message
-  if(nJ1939Status == NORMALDATATRAFFIC)
-  {
-    nCounter++;
+  // if(nJ1939Status == NORMALDATATRAFFIC)
+  // {
+  //   nCounter++;
     
-    if(nCounter == (int)(30/SYSTEM_TIME))
-    {
-      nSrcAddr = j1939.GetSourceAddress();
-      j1939.Transmit(6, 60416, nSrcAddr, 0x33, msgFakeNAME,8);
-      nCounter = 0;
+  //   if(nCounter == (int)(30/SYSTEM_TIME))
+  //   {
+  //     nSrcAddr = j1939.GetSourceAddress();
+  //     j1939.Transmit(6, 60416, nSrcAddr, 0x33, msgFakeNAME,8);
+  //     nCounter = 0;
       
-    }// end if
+  //   }// end if
   
-  }// end if
+  // }// end if
   
 
   // Check for reception of PGNs for our ECU/CA
-  //if(nMsgId == J1939_MSG_APP)
-  //{
-    // Check J1939 protocol status
-    switch(nJ1939Status)
-    {
+  switch(nJ1939Status)
+  {
 
-      case ADDRESSCLAIM_INPROGRESS:
+    case ADDRESSCLAIM_INPROGRESS:
+    
+      break;
       
-        break;
-        
-      case NORMALDATATRAFFIC:
-        if(nMsgLen != 0 ){
-          sprintf(sString, "PGN: 0x%X Src: 0x%X Dest: 0x%X ", (int)lPGN, nSrcAddr, nDestAddr);
+    case NORMALDATATRAFFIC:
+      if(nMsgLen != 0 ){
+        sprintf(sString, "PGN: 0x%X Src: 0x%X Dest: 0x%X ", (int)lPGN, nSrcAddr, nDestAddr);
+        Serial.print(sString);
+        Serial.print("Data: ");
+        for(int nIndex = 0; nIndex < nMsgLen; nIndex++)
+        {          
+          sprintf(sString, "0x%X ", pMsg[nIndex]);
           Serial.print(sString);
-          Serial.print("Data: ");
-          for(int nIndex = 0; nIndex < nMsgLen; nIndex++)
-          {          
-            sprintf(sString, "0x%X ", pMsg[nIndex]);
-            Serial.print(sString);
-            
-          }// end for
-          Serial.print("\n\r");
-          nMsgId = J1939_MSG_NONE;
-        }
-       break;
-        
-      case ADDRESSCLAIM_FAILED:
+          
+        }// end for
+        Serial.print("\n\r");
+        nMsgId = J1939_MSG_NONE;
+      }
+      break;
       
-        break;
-      
-    }// end switch(nJ1939Status)  
-  //}// end if
- 
+    case ADDRESSCLAIM_FAILED:
+    
+      break;
+    
+  }// end switch(nJ1939Status)  
 }// end loop
