@@ -66,7 +66,6 @@ enum FPL_e{         // Flash Protect Lamp Status
 };                  // NoFaultVal = 0; Min = 0; Max = 3
 
 // FMI(Fault Mode Indicator) Values      // Specific Use in Inverter description
-
 #define VALID_OVER_RANGE_SEV     0x00   // 00, SEVERE, Covers Faults that exceed critical thresholds such as overcurrents.
 #define VALID_BELOW_RANGE_SEV    0x01   // 01, SEVERE, Typically an under-volt event on high-voltage supply or low-volt batt connection that will affect inverter operations
 #define ERRATIC_INTERMIT         0x02   // 02, Usually related to position feedback device or a communication issue.
@@ -87,3 +86,25 @@ enum FPL_e{         // Flash Protect Lamp Status
 #define VALID_BELOW_RANGE_LEAST  0x11   // 17, Undervoltage events
 #define VALID_BELOW_RANGE_MODER  0x12   // 18, Undervoltage lockout
 #define CONDITION_EXISTS         0x1F   // 31, For fault that exists but have no other relevant characteristics
+
+unsigned int[] FMI_Values_Array = {
+    VALID_OVER_RANGE_SEV,
+    VALID_BELOW_RANGE_SEV,
+    ERRATIC_INTERMIT,
+    VOLT_OVER_NORM,
+    VOLT_BELOW_NORM,
+    CURRENT_OVER_NORM,
+    CURRENT_BELOW_NORM,
+    MECH_SYS_NO_RESP,
+    ABNORM_FREQ,
+    ABNORM_UPDATE_RATE,
+    CAUSE_UNKNOWN,
+    BAD_COMPONENT,
+    OUT_OF_CALIB,
+    SPECIAL_INSTRUCT,
+    VALID_OVER_RANGE_LEAST,
+    VALID_OVER_RANGE_MODER,
+    VALID_BELOW_RANGE_LEAST,
+    VALID_BELOW_RANGE_MODER,
+    CONDITION_EXISTS
+};

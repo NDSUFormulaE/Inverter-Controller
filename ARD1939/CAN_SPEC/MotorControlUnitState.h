@@ -18,3 +18,20 @@
 #define MCU_ADV_DIAG_CLASSB          0x11  //17, Advanced Diagnostics Class B
 
 #define NUM_MCU_STATES               15
+
+unsigned int[] MCU_State_Array = {
+    MCU_PWR_UP,
+    MCU_STDBY,
+    MCU_FUNCTIONAL_DIAG,
+    MCU_FAULT_CLASSA,
+    MCU_IGNIT_READY,
+    MCU_PWR_READY,
+    MCU_DRIVE_READY,
+    MCU_NORM_OPS,
+    MCU_FAULT_CLASSB,
+    MCU_CNTRL_PWR_DOWN,
+    MCU_FAIL_SAFE,
+    MCU_ADV_DIAG_CLASSA,
+    MCU_DISCHARGE_DIAG,
+    MCU_ADV_DIAG_CLASSB
+};

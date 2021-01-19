@@ -1,3 +1,5 @@
+#define ADDRESS_CLAIM_RESPONSE        0xEE00
+
 // CAN Command Messages (PD400 CAN Spec 2.3.1.X) -> Sent to Inverter
 #define COMMAND1_RELTORQUE            0xEF00      // must be |'d with Inverter Source Address
 #define COMMAND2_SPEED                0xEF00      // must be |'d with Inverter Source Address
@@ -14,7 +16,7 @@
 #define DC_LINK_PWR_CURRENT_LIMITING  0xEF00      // must be |'d with Inverter Source Address
 
 // CAN Status Messages (PD400 CAN Spec 2.3.2.X) -> Sent From Inverter
-#define STATUS1_RELTORQUE_SPEED       0xFFFE
+#define STATUS1_RELTORQUE_SPEED       0xFFFE 
 #define STATUS2_STATE_VOLTAGE         0xFFFE
 #define STATUS3_ABSTORQUE_SPEED       0xFFFB
 #define STATUS4_TORQUE_PWRSTAGE_OVRLD 0xFFF4

@@ -42,7 +42,7 @@ void setup()
   else{
     Serial.print("CAN Controller Init Failed.\n\r");
     delay(100);
-    resetFunc();
+    resetFunc(); // If CAN Controller doesnt init correctly, wait 100ms then try again.
   }    
  // Set the preferred address and address range
  j1939.SetPreferredAddress(SA_PREFERRED);

@@ -14,7 +14,7 @@
 // 0 - ARD1939-Uno
 // 1 - ARD1939-Uno/TP
 // 2 - ARD1939-Mega
-#define ARD1939VERSION                          0
+#define ARD1939VERSION                          1
 
 // J1939 Settings
 #if ARD1939VERSION == 0
