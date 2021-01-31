@@ -23,6 +23,7 @@
 
 ARD1939 j1939;
 
+extern struct CANVariables InverterState;
 int nCounter = 0;
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
@@ -164,6 +165,7 @@ void loop()
       //   Serial.print("\n\r");
       //   nMsgId = J1939_MSG_NONE;
       // }
+      Serial.print(InverterState.Avg_Torque_Percent);
       break;
       
     case ADDRESSCLAIM_FAILED:

@@ -67,5 +67,3 @@ struct CANVariables
     uint32_t DM1_FMI;
     uint32_t Occurrence_Count;
 };
-
-struct CANVariables InverterState = {};

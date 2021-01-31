@@ -1,3 +1,5 @@
+#include "CAN_SPEC/CANVariables.h"
+
 #ifndef ARD1939_H
 #define ARD1939_H
 

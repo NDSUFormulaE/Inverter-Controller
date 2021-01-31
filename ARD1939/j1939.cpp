@@ -2,7 +2,6 @@
 #include <inttypes.h>
 #include <SPI.h>
 
-#include "CAN_SPEC/CANVariables.h"
 #include "CAN_SPEC/PGN.h"
 #include "ARD1939.h"
 
@@ -184,6 +183,7 @@ extern byte canInit(void);
 extern byte canCheckError(void);
 extern byte canTransmit(long, unsigned char*, int);
 extern byte canReceive(long*, unsigned char*, int*);
+struct CANVariables InverterState = {};
 byte ARD1939::Init(int v80)
 {
   int v65;
