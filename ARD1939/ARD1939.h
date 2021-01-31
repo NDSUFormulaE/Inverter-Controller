@@ -110,7 +110,7 @@ class ARD1939
     void Terminate(void);
     byte GetSourceAddress(void);
     void DeleteMessageFilter(long lPGN);
-    
+    void CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message, int* CAN_MessageLen, byte* CAN_DestAddr, byte* CAN_SrcAddr, byte* CAN_Priority);
   private:
     byte f01(byte, byte*);
     bool f02(void);

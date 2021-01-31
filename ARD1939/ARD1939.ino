@@ -65,7 +65,7 @@ void setup()
                NAME_VEHICLE_SYSTEM_INSTANCE,
                NAME_INDUSTRY_GROUP,
                NAME_ARBITRARY_ADDRESS_CAPABLE);
-               
+
 }// end setup
 
 // ------------------------------------------------------------------------
@@ -94,7 +94,7 @@ void loop()
   
   // Call the J1939 protocol stack
   nJ1939Status = j1939.Operate(&nMsgId, &lPGN, &pMsg[0], &nMsgLen, &nDestAddr, &nSrcAddr, &nPriority);
-  
+  j1939.CANInterpret(&nMsgId, &lPGN, &pMsg[0], &nMsgLen, &nDestAddr, &nSrcAddr, &nPriority);
   /*
   // Block certain claimed addresses
   if(nMsgId == J1939_MSG_PROTOCOL)
