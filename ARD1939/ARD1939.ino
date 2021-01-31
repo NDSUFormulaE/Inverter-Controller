@@ -24,7 +24,6 @@
 ARD1939 j1939;
 
 int nCounter = 0;
-
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
 
@@ -152,19 +151,19 @@ void loop()
       break;
       
     case NORMALDATATRAFFIC:
-      if(nMsgLen != 0 ){
-        sprintf(sString, "PGN: 0x%X Src: 0x%X Dest: 0x%X ", (int)lPGN, nSrcAddr, nDestAddr);
-        Serial.print(sString);
-        Serial.print("Data: ");
-        for(int nIndex = 0; nIndex < nMsgLen; nIndex++)
-        {          
-          sprintf(sString, "0x%X ", pMsg[nIndex]);
-          Serial.print(sString);
+      // if(nMsgLen != 0 ){
+      //   sprintf(sString, "PGN: 0x%X Src: 0x%X Dest: 0x%X ", (int)lPGN, nSrcAddr, nDestAddr);
+      //   Serial.print(sString);
+      //   Serial.print("Data: ");
+      //   for(int nIndex = 0; nIndex < nMsgLen; nIndex++)
+      //   {          
+      //     sprintf(sString, "0x%X ", pMsg[nIndex]);
+      //     Serial.print(sString);
           
-        }// end for
-        Serial.print("\n\r");
-        nMsgId = J1939_MSG_NONE;
-      }
+      //   }// end for
+      //   Serial.print("\n\r");
+      //   nMsgId = J1939_MSG_NONE;
+      // }
       break;
       
     case ADDRESSCLAIM_FAILED:

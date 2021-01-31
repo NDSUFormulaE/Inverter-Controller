@@ -5,10 +5,10 @@
 
 struct CANVariables
 {
-    float Avg_Torque_Percent = 0.0;
-    float Rel_Machine_Speed = 0.0;
-    uint32_t MCU_State = 0;
-    float DC_Bus_Voltage = 0.0;
+    float Avg_Torque_Percent;
+    float Rel_Machine_Speed;
+    uint32_t MCU_State;
+    float DC_Bus_Voltage;
     uint32_t Derate_Owner;
     uint32_t Diag_Function;
     uint32_t Diag_Status;
