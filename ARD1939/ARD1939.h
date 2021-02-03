@@ -1,3 +1,5 @@
+#include "CAN_SPEC/CANVariables.h"
+
 #ifndef ARD1939_H
 #define ARD1939_H
 
@@ -14,7 +16,7 @@
 // 0 - ARD1939-Uno
 // 1 - ARD1939-Uno/TP
 // 2 - ARD1939-Mega
-#define ARD1939VERSION                          0
+#define ARD1939VERSION                          1
 
 // J1939 Settings
 #if ARD1939VERSION == 0
@@ -110,7 +112,7 @@ class ARD1939
     void Terminate(void);
     byte GetSourceAddress(void);
     void DeleteMessageFilter(long lPGN);
-    
+    void CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message, int* CAN_MessageLen, byte* CAN_DestAddr, byte* CAN_SrcAddr, byte* CAN_Priority);
   private:
     byte f01(byte, byte*);
     bool f02(void);

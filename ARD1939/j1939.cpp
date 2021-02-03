@@ -2,6 +2,7 @@
 #include <inttypes.h>
 #include <SPI.h>
 
+#include "CAN_SPEC/PGN.h"
 #include "ARD1939.h"
 
 #define d49                             10
@@ -182,7 +183,7 @@ extern byte canInit(void);
 extern byte canCheckError(void);
 extern byte canTransmit(long, unsigned char*, int);
 extern byte canReceive(long*, unsigned char*, int*);
-
+struct CANVariables InverterState = {};
 byte ARD1939::Init(int v80)
 {
   int v65;
@@ -1161,3 +1162,159 @@ void ARD1939::f12(byte v90)
 
 #endif
 
+
+
+void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message, int* CAN_MessageLen, byte* CAN_DestAddr, byte* CAN_SrcAddr, byte* CAN_Priority){
+  
+  byte message[int(&CAN_MessageLen)];
+
+  for(int i = 0; i < int(&CAN_MessageLen); i++)
+    message[i] = CAN_Message[i];
+
+  // TO ADD: pull stored inverter address from memory table and ensure that we run this switch statement when from the inverter
+  switch(int(&CAN_PGN)){
+    case ADDRESS_CLAIM_RESPONSE:
+
+      // pull info into name table
+      // US9
+      break;
+    
+    // Shared PGN for STATUS1_RELTORQUE_SPEED, STATUS2_STATE_VOLTAGE, PROGNOSTIC1_RMS_CURRENT, PROGNOSTIC2_DIAGNOSTIC,
+    // PROGNOSTIC3_DIAGNOSTIC & PROGNOSTIC5_POSITION
+    case STATUS1_RELTORQUE_SPEED:
+
+      // STATUS1_RELTORQUE_SPEED
+      if(message[0] == 0x79 && message[1] == 0xFF){
+        InverterState.Avg_Torque_Percent = ((message[2] + (message[3] << 8)) * 0.00390625) - 125.0;
+        // Check if these machine speeds are different
+        InverterState.Rel_Machine_Speed = ((message[4] + (message[5] << 8)) * 0.5) - 16000.0;        // Units: RPM
+      }
+      // STATUS2_STATE_VOLTAGE
+      else if(message[0] == 0x77 && message[1] == 0xFF){
+        InverterState.MCU_State = message[2];
+        InverterState.DC_Bus_Voltage = (message[3] + (message[4] << 8)) * 0.03125;                   // Units: Volts
+        InverterState.Derate_Owner = message[5];
+        InverterState.Diag_Function = message[6] + ((message[7] >> 3) << 8);
+        InverterState.Diag_Status = message[7] % 8; // pulls the last 3 bits from the byte
+      }
+      // PROGNOSTIC1_RMS_CURRENT
+      else if(message[0] == 0x7A){
+        InverterState.RMS_Current_Phase_A = (message[1] + (message[2] << 8)) * 0.0625;               // Units: Amps
+        InverterState.RMS_Current_Phase_B = (message[3] + (message[4] << 8)) * 0.0625;               // Units: Amps
+        InverterState.RMS_Current_Phase_C = (message[5] + (message[6] << 8)) * 0.0625;               // Units: Amps
+        InverterState.Brake_Resistor_RMS_Current = message[7];                                    // Units: Amps
+      }
+      // PROGNOSTIC2_DIAGNOSTIC
+      else if(message[0] == 0xF7){
+        InverterState.Brake_Resistance = (message[1] + (message[2] << 8)) * 0.5;                     // Units: milliOhm
+        InverterState.DC_Link_Capacitance = (message[3] + (message[4] << 8)) * 0.5;                  // Units: microFarad
+        InverterState.Motor_BEMF = (message[5] + (message[6] << 8)) * 0.000030517578125;             // Units: Volts/RPM
+        InverterState.EMI_Capacitance = message[7] * 32;                                          // Units: nanoFarad
+      }
+      // PROGNOSTIC3_DIAGNOSTIC
+      else if(message[0] == 0xF8){
+        InverterState.Machine_Speed_200ms_Avg = ((message[1] + (message[2] << 8)) * 0.5) - 16000.0;  // Units: RPM
+        InverterState.Mach_Torq_Percent_200ms_Avg = ((message[3] + (message[4] << 8)) * 0.00390625) - 16000.0; 
+      // PROGNOSTIC5_POSITION
+      }
+      else if(message[0] == 0x81){
+        InverterState.Stored_Pos_Offset = (message[2] + (message[3] << 8)) * 0.0078125;              // Units: Elec. Degrees
+        InverterState.Calculated_Pos_Offset = (message[4] + (message[5] << 8)) * 0.0078125;          // Units: Elec. Degrees
+      }
+      break;
+
+    // Shared PGN for STATUS3_ABSTORQUE_SPEED, DC_LINK_PWR_STATUS && VOLTAGE_RMS1
+    case STATUS3_ABSTORQUE_SPEED:
+
+      // STATUS3_ABSTORQUE_SPEED
+      if(message[0] == 0x00 && message[0] == 0x51){
+        InverterState.Avg_Abs_Torque = ((message[2] + (message[3] << 8)) * 0.1) - 3200.0;            // Units: Nm
+        // Check if these machine speeds are different
+        InverterState.Abs_Machine_Speed = ((message[4] + (message[5] << 8)) * 0.5) - 16000.0;        // Units: RPM
+      }
+      // DC_LINK_PWR_STATUS
+      else if(message[0] == 0x00 && message[0] == 0x56){
+        InverterState.Actual_Power = ((message[2] + (message[3] << 8)) * 0.001) - 32.0;
+        InverterState.Max_Power_Generating = (message[4] + (message[5] << 8)) * 0.001;
+        InverterState.Max_Power_Motoring = (message[6] + (message[7] << 8)) * 0.001;
+      }
+      // VOLTAGE_RMS1
+      else if(message[0] == 0x00 && message[0] == 0x54){
+        InverterState.RMS_Voltage_Phase_A = (message[2] + (message[3] << 8)) * 0.03125;               // Units: Amps
+        InverterState.RMS_Voltage_Phase_B = (message[4] + (message[5] << 8)) * 0.03125;               // Units: Amps
+        InverterState.RMS_Voltage_Phase_C = (message[6] + (message[7] << 8)) * 0.03125;               // Units: Amps
+      }
+
+      break;
+
+    // Shared PGN for STATUS4_TORQUE_PWRSTAGE_OVRLD, INVERTER_TEMP1_IGBT, AC_SUPPLY_STATUS & DC_LINK_PWR_CURRENT_STATUS
+    case STATUS4_TORQUE_PWRSTAGE_OVRLD:
+
+      // STATUS4_TORQUE_PWRSTAGE_OVRLD
+      if(message[0] == 0x32 && message[0] == 0xFF){
+      InverterState.Neg_Torque_Available = ((message[2] + (message[3] << 8)) * 0.1) - 3200.0;        // Units: Nm
+      InverterState.Pos_Torque_Available = ((message[2] + (message[3] << 8)) * 0.1) - 3200.0;        // Units: Nm
+      // Power Stage Status Values
+      // 0 = Outputs Off
+      // 1 = Normal Switching
+      // 2 = High Side Three Phase Short
+      // 3 = Low Side Three Phase Short
+      InverterState.Power_Stage_Status = message[6];
+      InverterState.Overload_Percent = message[7] * 0.5;
+      }
+      // INVERTER_TEMP1_IGBT
+      else if(message[0] == 0x90){
+        InverterState.IGBT1_Temp = message[1] - 40;                                                // Units: Degrees Celcius
+        InverterState.IGBT2_Temp = message[2] - 40;                                                // Units: Degrees Celcius
+        InverterState.IGBT3_Temp = message[3] - 40;                                                // Units: Degrees Celcius
+        InverterState.IGBT4_Temp = message[4] - 40;                                                // Units: Degrees Celcius
+        InverterState.IGBT5_Temp = message[5] - 40;                                                // Units: Degrees Celcius
+        InverterState.IGBT6_Temp = message[6] - 40;                                                // Units: Degrees Celcius
+        InverterState.Brake_Chopper_IGBT_Temp = message[7] - 40;                                   // Units: Degrees Celcius
+      }
+      // AC_SUPPLY_STATUS
+      else if(message[0] == 0x31 && message[0] == 0xFF){
+        InverterState.AC_Voltage_Output = message[2] + (message[3] << 8);                         // Units: Vrms
+        InverterState.AC_Frequency = message[4] + (message[5] << 8);                              // Units: Hz
+        InverterState.AC_Voltage_Desired = message[6] + (message[7] << 8);                        // Units: Vrms
+      }
+      // DC_LINK_PWR_CURRENT_STATUS
+      else if(message[0] == 0x36 && message[0] == 0xFF){
+        InverterState.Actual_Current = ((message[2] + (message[3] << 8)) * 0.001) - 32.0;
+        InverterState.Max_Current_Generating = (message[4] + (message[5] << 8)) * 0.001;
+        InverterState.Max_Current_Motoring = (message[6] + (message[7] << 8)) * 0.001;
+      }
+
+      break;
+
+    case INVERTER_TEMP2_MACHINE:
+      if(message[0] == 0xE4){
+        InverterState.Motor_Temp_1 = message[1] - 40;                                              // Units: degrees Celcius
+        InverterState.Motor_Temp_2 = message[2] - 40;                                              // Units: degrees Celcius
+        InverterState.Motor_Temp_3 = message[3] - 40;                                              // Units: degrees Celcius
+
+        InverterState.Brake_Resistor_Temp = message[5] - 40;                                       // Units: degrees Celcius
+        InverterState.Control_Board_Temp = message[6] - 40;                                        // Units: degrees Celcius
+        InverterState.Inverter_Coolant_Temp = message[7] - 40;                                     // Units: degrees Celcius
+      }
+      break;
+
+    case DM1:
+      InverterState.Protect_Lamp_Status = message[0] >> 6;
+      InverterState.Amber_Warning_Lamp_Status = (message[0] >> 4) % 4;
+      InverterState.Red_Stop_Lamp_Status = (message[0] >> 2) % 4;
+      InverterState.Multi_Indicator_Lamp_Status = message[0] % 4;
+
+      InverterState.Flash_Protect_Lamp_Status = message[1] >> 6;
+      InverterState.Flash_Amber_Warning_Lamp_Status = (message[1] >> 4) % 4;
+      InverterState.Flash_Red_Stop_Lamp_Status = (message[1] >> 2) % 4;
+      InverterState.Flash_Multi_Indicator_Lamp_Status = message[1] % 4;
+
+      InverterState.DM1_SPN = message[2] + (message[3] << 8);
+
+      InverterState.DM1_FMI = message[4] % 8;
+
+      InverterState.Occurrence_Count = message[5] % 2;
+      break;
+  }
+}
