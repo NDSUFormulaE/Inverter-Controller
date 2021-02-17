@@ -1185,7 +1185,7 @@ void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message
   switch(int(&CAN_PGN)){
     case ADDRESS_CLAIM_RESPONSE:
 
-      boolean found = false;
+      bool found = false;
       for(int i = 0; i < NameTable.Names.size();i++){
         if(NameTable.Names[i].SA == &CAN_SrcAddr){
           found = true;
@@ -1344,4 +1344,5 @@ void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message
       break;
   }
 }
+
 
