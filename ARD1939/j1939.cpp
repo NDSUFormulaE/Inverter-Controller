@@ -1167,7 +1167,16 @@ void ARD1939::f12(byte v90)
 void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message, int* CAN_MessageLen, byte* CAN_DestAddr, byte* CAN_SrcAddr, byte* CAN_Priority){
   
   byte message[int(&CAN_MessageLen)];
-  byte addArr[1][3];
+
+
+  struct  NameFromSrc {
+  byte SA;
+  byte NAME[8];
+  }
+  
+  struct NameTable {
+  NameFromSrc Names[3];
+  }
 
   for(int i = 0; i < int(&CAN_MessageLen); i++)
     message[i] = CAN_Message[i];
@@ -1177,18 +1186,20 @@ void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message
     case ADDRESS_CLAIM_RESPONSE:
 
       boolean found = false;
-      for(int i = 0; i < addArr.size();i++){
-        if(addArr[i][1] == CAN_PGN){
+      for(int i = 0; i < NameTable.Names.size();i++){
+        if(NameTable.Names[i].SA == &CAN_SrcAddr){
           found = true;
         }
       }
       if(found == false){
-        byte tempArr[addArr.size()+1][7];
-        for(int i = 0; i < addArr.size();i++){
-          tempArr[i][0]=addArr[i][0];
+        int i;
+        for(i = 0; i < NameTable.Names.size();i++){
+          if(NameTable.Names[i].SA == null)
+            break;
         }
-        tempArr[tempArr.size()-1][0]=CAN_messageID;
-        addArr = tempArr;
+        NameTable.Names[i].SA = &CAN_SrcAddr;
+        NameTable.Names[i].NAME = message;
+        
       }
       // pull info into name table
       // US9
