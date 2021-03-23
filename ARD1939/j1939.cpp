@@ -1168,6 +1168,16 @@ void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message
   
   byte message[int(&CAN_MessageLen)];
 
+
+  struct  NameFromSrc {
+  byte SA;
+  byte NAME[8];
+  }
+  
+  struct NameTable {
+  NameFromSrc Names[3];
+  }
+
   for(int i = 0; i < int(&CAN_MessageLen); i++)
     message[i] = CAN_Message[i];
 
@@ -1175,6 +1185,22 @@ void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message
   switch(int(&CAN_PGN)){
     case ADDRESS_CLAIM_RESPONSE:
 
+      bool found = false;
+      for(int i = 0; i < NameTable.Names.size();i++){
+        if(NameTable.Names[i].SA == &CAN_SrcAddr){
+          found = true;
+        }
+      }
+      if(found == false){
+        int i;
+        for(i = 0; i < NameTable.Names.size();i++){
+          if(NameTable.Names[i].SA == null)
+            break;
+        }
+        NameTable.Names[i].SA = &CAN_SrcAddr;
+        NameTable.Names[i].NAME = message;
+        
+      }
       // pull info into name table
       // US9
       break;
@@ -1318,3 +1344,5 @@ void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message
       break;
   }
 }
+
+

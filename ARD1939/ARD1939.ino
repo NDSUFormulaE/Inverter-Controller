@@ -41,7 +41,7 @@ void setup()
     Serial.print("CAN Controller Init OK.\n\r\n\r");
   else{
     Serial.print("CAN Controller Init Failed.\n\r");
-    delay(100);
+    delay(500);
     resetFunc(); // If CAN Controller doesnt init correctly, wait 100ms then try again.
   }    
  // Set the preferred address and address range
@@ -94,82 +94,41 @@ void loop()
   
   // Call the J1939 protocol stack
   nJ1939Status = j1939.Operate(&nMsgId, &lPGN, &pMsg[0], &nMsgLen, &nDestAddr, &nSrcAddr, &nPriority);
-  j1939.CANInterpret(&nMsgId, &lPGN, &pMsg[0], &nMsgLen, &nDestAddr, &nSrcAddr, &nPriority);
-  /*
-  // Block certain claimed addresses
-  if(nMsgId == J1939_MSG_PROTOCOL)
-  {
-    if(lPGN == 0x00EE00)
-    {
-      if(nSrcAddr >= 129 && nSrcAddr <= 134)
-        j1939.Transmit(6, 0x00EE00, nSrcAddr, 255, msgFakeNAME, 8);
-    
-    }// end if
-    
-  }// end if
-  */
-  
-  /*
-  // Send out a periodic message with a length of more than 8 bytes
-  // BAM Session
-  if(nJ1939Status == NORMALDATATRAFFIC)
-  {
-    nCounter++;
-    
-    if(nCounter == (int)(5000/SYSTEM_TIME))
-    {
-      nSrcAddr = j1939.GetSourceAddress();
-      j1939.Transmit(6, 59999, nSrcAddr, 255, msgLong, 15);
-      nCounter = 0;
-      
-    }// end if
-  
-  }// end if
-  */
-  
-  // Test Periodic Message
-  // if(nJ1939Status == NORMALDATATRAFFIC)
-  // {
-  //   nCounter++;
-    
-  //   if(nCounter == (int)(30/SYSTEM_TIME))
-  //   {
-  //     nSrcAddr = j1939.GetSourceAddress();
-  //     j1939.Transmit(6, 60416, nSrcAddr, 0x33, msgFakeNAME,8);
-  //     nCounter = 0;
-      
-  //   }// end if
-  
-  // }// end if
-  
+  Serial.print(InverterState.MCU_State);
+  Serial.print("\n\r");
+  Serial.print(InverterState.Avg_Torque_Percent);
+  Serial.print("\n\r");
 
   // Check for reception of PGNs for our ECU/CA
   switch(nJ1939Status)
   {
-
     case ADDRESSCLAIM_INPROGRESS:
     
       break;
       
     case NORMALDATATRAFFIC:
-      // if(nMsgLen != 0 ){
-      //   sprintf(sString, "PGN: 0x%X Src: 0x%X Dest: 0x%X ", (int)lPGN, nSrcAddr, nDestAddr);
-      //   Serial.print(sString);
-      //   Serial.print("Data: ");
-      //   for(int nIndex = 0; nIndex < nMsgLen; nIndex++)
-      //   {          
-      //     sprintf(sString, "0x%X ", pMsg[nIndex]);
-      //     Serial.print(sString);
+      // Serial.print("Interpretting\n\r");
+      j1939.CANInterpret(&nMsgId, &lPGN, &pMsg[0], &nMsgLen, &nDestAddr, &nSrcAddr, &nPriority);
+      // Serial.print("Done\n\r");
+      if(nMsgLen != 0 ){
+        sprintf(sString, "PGN: 0x%X Src: 0x%X Dest: 0x%X ", (int)lPGN, nSrcAddr, nDestAddr);
+        Serial.print(sString);
+        Serial.print("Data: ");
+        for(int nIndex = 0; nIndex < nMsgLen; nIndex++)
+        {          
+          sprintf(sString, "0x%X ", pMsg[nIndex]);
+          Serial.print(sString);
           
-      //   }// end for
-      //   Serial.print("\n\r");
-      //   nMsgId = J1939_MSG_NONE;
-      // }
-      Serial.print(InverterState.Avg_Torque_Percent);
+        }// end for
+        Serial.print("\n\r");
+        nMsgId = J1939_MSG_NONE;
+      }
+      
+      //Serial.print(InverterState.Avg_Torque_Percent);
       break;
       
     case ADDRESSCLAIM_FAILED:
-    
+      resetFunc();
       break;
     
   }// end switch(nJ1939Status)  
