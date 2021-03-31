@@ -2,6 +2,7 @@
 #include <inttypes.h>
 #include <SPI.h>
 
+#include "CAN_SPEC/MotorControlUnitState.h"
 #include "CAN_SPEC/PGN.h"
 #include "ARD1939.h"
 
@@ -1346,3 +1347,18 @@ void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message
 }
 
 
+
+
+
+
+boolean ARD1939::StateTransitionCheck(){
+  switch(InverterState.MCU_State){
+    case MCU_STDBY: return true; break;
+    case MCU_IGNIT_READY: return true; break;
+    case MCU_PWR_READY: return true; break;
+    case MCU_DRIVE_READY: return true; break;
+    case MCU_NORM_OPS: return true; break;
+    default: return false; break;
+  }
+
+}
