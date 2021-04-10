@@ -20,6 +20,7 @@
 #include <SPI.h>
 
 #include "ARD1939.h"
+#include "CAN_SPEC/PGN.h"
 
 ARD1939 j1939;
 
@@ -38,7 +39,7 @@ void setup()
   
   // Initialize the J1939 protocol including CAN settings
   if(j1939.Init(SYSTEM_TIME) == 0)
-    Serial.print("CAN Controller Init OK.\n\r\n\r");
+    Serial.print("CAN Controller Init OK.\n\r");
   else{
     Serial.print("CAN Controller Init Failed.\n\r");
     delay(500);
@@ -64,8 +65,7 @@ void setup()
                NAME_VEHICLE_SYSTEM,
                NAME_VEHICLE_SYSTEM_INSTANCE,
                NAME_INDUSTRY_GROUP,
-               NAME_ARBITRARY_ADDRESS_CAPABLE);
-
+               NAME_ARBITRARY_ADDRESS_CAPABLE);  
 }// end setup
 
 // ------------------------------------------------------------------------
@@ -94,41 +94,34 @@ void loop()
   
   // Call the J1939 protocol stack
   nJ1939Status = j1939.Operate(&nMsgId, &lPGN, &pMsg[0], &nMsgLen, &nDestAddr, &nSrcAddr, &nPriority);
-  Serial.print(InverterState.MCU_State);
-  Serial.print("\n\r");
-  Serial.print(InverterState.Avg_Torque_Percent);
-  Serial.print("\n\r");
 
   // Check for reception of PGNs for our ECU/CA
   switch(nJ1939Status)
   {
-    case ADDRESSCLAIM_INPROGRESS:
-    
+    case ADDRESSCLAIM_INPROGRESS:     
       break;
       
     case NORMALDATATRAFFIC:
-      // Serial.print("Interpretting\n\r");
       j1939.CANInterpret(&nMsgId, &lPGN, &pMsg[0], &nMsgLen, &nDestAddr, &nSrcAddr, &nPriority);
-      // Serial.print("Done\n\r");
-      if(nMsgLen != 0 ){
+      //Log incoming messages to Serial. For Testing.
+      if(nMsgLen != 0){
         sprintf(sString, "PGN: 0x%X Src: 0x%X Dest: 0x%X ", (int)lPGN, nSrcAddr, nDestAddr);
         Serial.print(sString);
         Serial.print("Data: ");
         for(int nIndex = 0; nIndex < nMsgLen; nIndex++)
         {          
-          sprintf(sString, "0x%X ", pMsg[nIndex]);
+          sprintf(sString, "0x%X ", InverterState.Last_Message[nIndex]);
           Serial.print(sString);
-          
-        }// end for
+        }
         Serial.print("\n\r");
-        nMsgId = J1939_MSG_NONE;
       }
-      
-      //Serial.print(InverterState.Avg_Torque_Percent);
+      nMsgId = J1939_MSG_NONE;
       break;
       
     case ADDRESSCLAIM_FAILED:
+      Serial.print("AddressClaim Failed\n\r");
       resetFunc();
+      delay(1000);
       break;
     
   }// end switch(nJ1939Status)  

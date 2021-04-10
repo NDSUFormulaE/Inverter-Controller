@@ -3,6 +3,13 @@
 
 #include <inttypes.h>
 
+#define NAMETABLE_LEN  3
+#define MESSAGE_LEN    8
+  struct  NameFromSrc 
+  {
+  byte SA;
+  byte MESSAGE[MESSAGE_LEN];
+  };
 struct CANVariables
 {
     float Avg_Torque_Percent;
@@ -66,4 +73,6 @@ struct CANVariables
     uint32_t DM1_SPN;
     uint32_t DM1_FMI;
     uint32_t Occurrence_Count;
+    NameFromSrc Nametable[NAMETABLE_LEN];
+    byte* Last_Message;
 };
