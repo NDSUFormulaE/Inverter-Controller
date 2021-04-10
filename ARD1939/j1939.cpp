@@ -1165,44 +1165,29 @@ void ARD1939::f12(byte v90)
 
 
 void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message, int* CAN_MessageLen, byte* CAN_DestAddr, byte* CAN_SrcAddr, byte* CAN_Priority){
-  
-  byte message[int(&CAN_MessageLen)];
 
+  InverterState.Last_Message = CAN_Message;
 
-  // struct  NameFromSrc {
-  // byte SA;
-  // byte NAME[8];
-  // }
-  
-  // struct NameTable {
-  // NameFromSrc Names[3];
-  // }
-
-  for(int i = 0; i < int(&CAN_MessageLen); i++)
-    message[i] = CAN_Message[i];
-
-  // TO ADD: pull stored inverter address from memory table and ensure that we run this switch statement when from the inverter
-  switch(int(&CAN_PGN)){
+  switch(int(*CAN_PGN)){
     case ADDRESS_CLAIM_RESPONSE:
-
-      // bool found = false;
-      // for(int i = 0; i < NameTable.Names.size();i++){
-      //   if(NameTable.Names[i].SA == &CAN_SrcAddr){
-      //     found = true;
-      //   }
-      // }
-      // if(found == false){
-      //   int i;
-      //   for(i = 0; i < NameTable.Names.size();i++){
-      //     if(NameTable.Names[i].SA == null)
-      //       break;
-      //   }
-      //   NameTable.Names[i].SA = &CAN_SrcAddr;
-      //   NameTable.Names[i].NAME = message;
-        
-      // }
-      // pull info into name table
-      // US9
+      
+      bool found = false;
+      for(int i = 0; i < NAMETABLE_LEN;i++){
+        if(InverterState.Nametable[i].SA == *CAN_SrcAddr){
+          break;
+        }
+      }
+      if(found == false){
+        int i;
+        for(int i = 0; i < NAMETABLE_LEN;i++){
+          if(InverterState.Nametable[i].SA == 0)
+            break;
+        }
+        InverterState.Nametable[i].SA = (byte)*CAN_SrcAddr;
+        for(int j = 0; j< int(*CAN_MessageLen);j++){
+          InverterState.Nametable[i].MESSAGE[j] = (byte)*(CAN_Message + j);
+        }
+      }
       break;
     
     // Shared PGN for STATUS1_RELTORQUE_SPEED, STATUS2_STATE_VOLTAGE, PROGNOSTIC1_RMS_CURRENT, PROGNOSTIC2_DIAGNOSTIC,
@@ -1210,42 +1195,42 @@ void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message
     case STATUS1_RELTORQUE_SPEED:
 
       // STATUS1_RELTORQUE_SPEED
-      if(message[0] == 0x79 && message[1] == 0xFF){
-        InverterState.Avg_Torque_Percent = ((message[2] + (message[3] << 8)) * 0.00390625) - 125.0;
+      if(CAN_Message[0] == 0x79 && CAN_Message[1] == 0xFF){
+        InverterState.Avg_Torque_Percent = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.00390625) - 125.0;
         // Check if these machine speeds are different
-        InverterState.Rel_Machine_Speed = ((message[4] + (message[5] << 8)) * 0.5) - 16000.0;        // Units: RPM
+        InverterState.Rel_Machine_Speed = ((CAN_Message[4] + (CAN_Message[5] << 8)) * 0.5) - 16000.0;        // Units: RPM
       }
       // STATUS2_STATE_VOLTAGE
-      else if(message[0] == 0x77 && message[1] == 0xFF){
-        InverterState.MCU_State = message[2];
-        InverterState.DC_Bus_Voltage = (message[3] + (message[4] << 8)) * 0.03125;                   // Units: Volts
-        InverterState.Derate_Owner = message[5];
-        InverterState.Diag_Function = message[6] + ((message[7] >> 3) << 8);
-        InverterState.Diag_Status = message[7] % 8; // pulls the last 3 bits from the byte
+      else if(CAN_Message[0] == 0x77 && CAN_Message[1] == 0xFF){
+        InverterState.MCU_State = CAN_Message[2];
+        InverterState.DC_Bus_Voltage = (CAN_Message[3] + (CAN_Message[4] << 8)) * 0.03125;                   // Units: Volts
+        InverterState.Derate_Owner = CAN_Message[5];
+        InverterState.Diag_Function = CAN_Message[6] + ((CAN_Message[7] >> 3) << 8);
+        InverterState.Diag_Status = CAN_Message[7] % 8; // pulls the last 3 bits from the byte
       }
       // PROGNOSTIC1_RMS_CURRENT
-      else if(message[0] == 0x7A){
-        InverterState.RMS_Current_Phase_A = (message[1] + (message[2] << 8)) * 0.0625;               // Units: Amps
-        InverterState.RMS_Current_Phase_B = (message[3] + (message[4] << 8)) * 0.0625;               // Units: Amps
-        InverterState.RMS_Current_Phase_C = (message[5] + (message[6] << 8)) * 0.0625;               // Units: Amps
-        InverterState.Brake_Resistor_RMS_Current = message[7];                                    // Units: Amps
+      else if(CAN_Message[0] == 0x7A){
+        InverterState.RMS_Current_Phase_A = (CAN_Message[1] + (CAN_Message[2] << 8)) * 0.0625;               // Units: Amps
+        InverterState.RMS_Current_Phase_B = (CAN_Message[3] + (CAN_Message[4] << 8)) * 0.0625;               // Units: Amps
+        InverterState.RMS_Current_Phase_C = (CAN_Message[5] + (CAN_Message[6] << 8)) * 0.0625;               // Units: Amps
+        InverterState.Brake_Resistor_RMS_Current = CAN_Message[7];                                    // Units: Amps
       }
       // PROGNOSTIC2_DIAGNOSTIC
-      else if(message[0] == 0xF7){
-        InverterState.Brake_Resistance = (message[1] + (message[2] << 8)) * 0.5;                     // Units: milliOhm
-        InverterState.DC_Link_Capacitance = (message[3] + (message[4] << 8)) * 0.5;                  // Units: microFarad
-        InverterState.Motor_BEMF = (message[5] + (message[6] << 8)) * 0.000030517578125;             // Units: Volts/RPM
-        InverterState.EMI_Capacitance = message[7] * 32;                                          // Units: nanoFarad
+      else if(CAN_Message[0] == 0xF7){
+        InverterState.Brake_Resistance = (CAN_Message[1] + (CAN_Message[2] << 8)) * 0.5;                     // Units: milliOhm
+        InverterState.DC_Link_Capacitance = (CAN_Message[3] + (CAN_Message[4] << 8)) * 0.5;                  // Units: microFarad
+        InverterState.Motor_BEMF = (CAN_Message[5] + (CAN_Message[6] << 8)) * 0.000030517578125;             // Units: Volts/RPM
+        InverterState.EMI_Capacitance = CAN_Message[7] * 32;                                          // Units: nanoFarad
       }
       // PROGNOSTIC3_DIAGNOSTIC
-      else if(message[0] == 0xF8){
-        InverterState.Machine_Speed_200ms_Avg = ((message[1] + (message[2] << 8)) * 0.5) - 16000.0;  // Units: RPM
-        InverterState.Mach_Torq_Percent_200ms_Avg = ((message[3] + (message[4] << 8)) * 0.00390625) - 16000.0; 
+      else if(CAN_Message[0] == 0xF8){
+        InverterState.Machine_Speed_200ms_Avg = ((CAN_Message[1] + (CAN_Message[2] << 8)) * 0.5) - 16000.0;  // Units: RPM
+        InverterState.Mach_Torq_Percent_200ms_Avg = ((CAN_Message[3] + (CAN_Message[4] << 8)) * 0.00390625) - 16000.0; 
       // PROGNOSTIC5_POSITION
       }
-      else if(message[0] == 0x81){
-        InverterState.Stored_Pos_Offset = (message[2] + (message[3] << 8)) * 0.0078125;              // Units: Elec. Degrees
-        InverterState.Calculated_Pos_Offset = (message[4] + (message[5] << 8)) * 0.0078125;          // Units: Elec. Degrees
+      else if(CAN_Message[0] == 0x81){
+        InverterState.Stored_Pos_Offset = (CAN_Message[2] + (CAN_Message[3] << 8)) * 0.0078125;              // Units: Elec. Degrees
+        InverterState.Calculated_Pos_Offset = (CAN_Message[4] + (CAN_Message[5] << 8)) * 0.0078125;          // Units: Elec. Degrees
       }
       break;
 
@@ -1253,22 +1238,22 @@ void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message
     case STATUS3_ABSTORQUE_SPEED:
 
       // STATUS3_ABSTORQUE_SPEED
-      if(message[0] == 0x00 && message[0] == 0x51){
-        InverterState.Avg_Abs_Torque = ((message[2] + (message[3] << 8)) * 0.1) - 3200.0;            // Units: Nm
+      if(CAN_Message[0] == 0x00 && CAN_Message[0] == 0x51){
+        InverterState.Avg_Abs_Torque = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.1) - 3200.0;            // Units: Nm
         // Check if these machine speeds are different
-        InverterState.Abs_Machine_Speed = ((message[4] + (message[5] << 8)) * 0.5) - 16000.0;        // Units: RPM
+        InverterState.Abs_Machine_Speed = ((CAN_Message[4] + (CAN_Message[5] << 8)) * 0.5) - 16000.0;        // Units: RPM
       }
       // DC_LINK_PWR_STATUS
-      else if(message[0] == 0x00 && message[0] == 0x56){
-        InverterState.Actual_Power = ((message[2] + (message[3] << 8)) * 0.001) - 32.0;
-        InverterState.Max_Power_Generating = (message[4] + (message[5] << 8)) * 0.001;
-        InverterState.Max_Power_Motoring = (message[6] + (message[7] << 8)) * 0.001;
+      else if(CAN_Message[0] == 0x00 && CAN_Message[0] == 0x56){
+        InverterState.Actual_Power = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.001) - 32.0;
+        InverterState.Max_Power_Generating = (CAN_Message[4] + (CAN_Message[5] << 8)) * 0.001;
+        InverterState.Max_Power_Motoring = (CAN_Message[6] + (CAN_Message[7] << 8)) * 0.001;
       }
       // VOLTAGE_RMS1
-      else if(message[0] == 0x00 && message[0] == 0x54){
-        InverterState.RMS_Voltage_Phase_A = (message[2] + (message[3] << 8)) * 0.03125;               // Units: Amps
-        InverterState.RMS_Voltage_Phase_B = (message[4] + (message[5] << 8)) * 0.03125;               // Units: Amps
-        InverterState.RMS_Voltage_Phase_C = (message[6] + (message[7] << 8)) * 0.03125;               // Units: Amps
+      else if(CAN_Message[0] == 0x00 && CAN_Message[0] == 0x54){
+        InverterState.RMS_Voltage_Phase_A = (CAN_Message[2] + (CAN_Message[3] << 8)) * 0.03125;               // Units: Amps
+        InverterState.RMS_Voltage_Phase_B = (CAN_Message[4] + (CAN_Message[5] << 8)) * 0.03125;               // Units: Amps
+        InverterState.RMS_Voltage_Phase_C = (CAN_Message[6] + (CAN_Message[7] << 8)) * 0.03125;               // Units: Amps
       }
 
       break;
@@ -1277,72 +1262,70 @@ void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message
     case STATUS4_TORQUE_PWRSTAGE_OVRLD:
 
       // STATUS4_TORQUE_PWRSTAGE_OVRLD
-      if(message[0] == 0x32 && message[0] == 0xFF){
-      InverterState.Neg_Torque_Available = ((message[2] + (message[3] << 8)) * 0.1) - 3200.0;        // Units: Nm
-      InverterState.Pos_Torque_Available = ((message[2] + (message[3] << 8)) * 0.1) - 3200.0;        // Units: Nm
+      if(CAN_Message[0] == 0x32 && CAN_Message[0] == 0xFF){
+      InverterState.Neg_Torque_Available = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.1) - 3200.0;        // Units: Nm
+      InverterState.Pos_Torque_Available = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.1) - 3200.0;        // Units: Nm
       // Power Stage Status Values
       // 0 = Outputs Off
       // 1 = Normal Switching
       // 2 = High Side Three Phase Short
       // 3 = Low Side Three Phase Short
-      InverterState.Power_Stage_Status = message[6];
-      InverterState.Overload_Percent = message[7] * 0.5;
+      InverterState.Power_Stage_Status = CAN_Message[6];
+      InverterState.Overload_Percent = CAN_Message[7] * 0.5;
       }
       // INVERTER_TEMP1_IGBT
-      else if(message[0] == 0x90){
-        InverterState.IGBT1_Temp = message[1] - 40;                                                // Units: Degrees Celcius
-        InverterState.IGBT2_Temp = message[2] - 40;                                                // Units: Degrees Celcius
-        InverterState.IGBT3_Temp = message[3] - 40;                                                // Units: Degrees Celcius
-        InverterState.IGBT4_Temp = message[4] - 40;                                                // Units: Degrees Celcius
-        InverterState.IGBT5_Temp = message[5] - 40;                                                // Units: Degrees Celcius
-        InverterState.IGBT6_Temp = message[6] - 40;                                                // Units: Degrees Celcius
-        InverterState.Brake_Chopper_IGBT_Temp = message[7] - 40;                                   // Units: Degrees Celcius
+      else if(CAN_Message[0] == 0x90){
+        InverterState.IGBT1_Temp = CAN_Message[1] - 40;                                                // Units: Degrees Celcius
+        InverterState.IGBT2_Temp = CAN_Message[2] - 40;                                                // Units: Degrees Celcius
+        InverterState.IGBT3_Temp = CAN_Message[3] - 40;                                                // Units: Degrees Celcius
+        InverterState.IGBT4_Temp = CAN_Message[4] - 40;                                                // Units: Degrees Celcius
+        InverterState.IGBT5_Temp = CAN_Message[5] - 40;                                                // Units: Degrees Celcius
+        InverterState.IGBT6_Temp = CAN_Message[6] - 40;                                                // Units: Degrees Celcius
+        InverterState.Brake_Chopper_IGBT_Temp = CAN_Message[7] - 40;                                   // Units: Degrees Celcius
       }
       // AC_SUPPLY_STATUS
-      else if(message[0] == 0x31 && message[0] == 0xFF){
-        InverterState.AC_Voltage_Output = message[2] + (message[3] << 8);                         // Units: Vrms
-        InverterState.AC_Frequency = message[4] + (message[5] << 8);                              // Units: Hz
-        InverterState.AC_Voltage_Desired = message[6] + (message[7] << 8);                        // Units: Vrms
+      else if(CAN_Message[0] == 0x31 && CAN_Message[0] == 0xFF){
+        InverterState.AC_Voltage_Output = CAN_Message[2] + (CAN_Message[3] << 8);                         // Units: Vrms
+        InverterState.AC_Frequency = CAN_Message[4] + (CAN_Message[5] << 8);                              // Units: Hz
+        InverterState.AC_Voltage_Desired = CAN_Message[6] + (CAN_Message[7] << 8);                        // Units: Vrms
       }
       // DC_LINK_PWR_CURRENT_STATUS
-      else if(message[0] == 0x36 && message[0] == 0xFF){
-        InverterState.Actual_Current = ((message[2] + (message[3] << 8)) * 0.001) - 32.0;
-        InverterState.Max_Current_Generating = (message[4] + (message[5] << 8)) * 0.001;
-        InverterState.Max_Current_Motoring = (message[6] + (message[7] << 8)) * 0.001;
+      else if(CAN_Message[0] == 0x36 && CAN_Message[0] == 0xFF){
+        InverterState.Actual_Current = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.001) - 32.0;
+        InverterState.Max_Current_Generating = (CAN_Message[4] + (CAN_Message[5] << 8)) * 0.001;
+        InverterState.Max_Current_Motoring = (CAN_Message[6] + (CAN_Message[7] << 8)) * 0.001;
       }
 
       break;
 
     case INVERTER_TEMP2_MACHINE:
-      if(message[0] == 0xE4){
-        InverterState.Motor_Temp_1 = message[1] - 40;                                              // Units: degrees Celcius
-        InverterState.Motor_Temp_2 = message[2] - 40;                                              // Units: degrees Celcius
-        InverterState.Motor_Temp_3 = message[3] - 40;                                              // Units: degrees Celcius
+      if(CAN_Message[0] == 0xE4){
+        InverterState.Motor_Temp_1 = CAN_Message[1] - 40;                                              // Units: degrees Celcius
+        InverterState.Motor_Temp_2 = CAN_Message[2] - 40;                                              // Units: degrees Celcius
+        InverterState.Motor_Temp_3 = CAN_Message[3] - 40;                                              // Units: degrees Celcius
 
-        InverterState.Brake_Resistor_Temp = message[5] - 40;                                       // Units: degrees Celcius
-        InverterState.Control_Board_Temp = message[6] - 40;                                        // Units: degrees Celcius
-        InverterState.Inverter_Coolant_Temp = message[7] - 40;                                     // Units: degrees Celcius
+        InverterState.Brake_Resistor_Temp = CAN_Message[5] - 40;                                       // Units: degrees Celcius
+        InverterState.Control_Board_Temp = CAN_Message[6] - 40;                                        // Units: degrees Celcius
+        InverterState.Inverter_Coolant_Temp = CAN_Message[7] - 40;                                     // Units: degrees Celcius
       }
       break;
 
     case DM1:
-      InverterState.Protect_Lamp_Status = message[0] >> 6;
-      InverterState.Amber_Warning_Lamp_Status = (message[0] >> 4) % 4;
-      InverterState.Red_Stop_Lamp_Status = (message[0] >> 2) % 4;
-      InverterState.Multi_Indicator_Lamp_Status = message[0] % 4;
+      InverterState.Protect_Lamp_Status = CAN_Message[0] >> 6;
+      InverterState.Amber_Warning_Lamp_Status = (CAN_Message[0] >> 4) % 4;
+      InverterState.Red_Stop_Lamp_Status = (CAN_Message[0] >> 2) % 4;
+      InverterState.Multi_Indicator_Lamp_Status = CAN_Message[0] % 4;
 
-      InverterState.Flash_Protect_Lamp_Status = message[1] >> 6;
-      InverterState.Flash_Amber_Warning_Lamp_Status = (message[1] >> 4) % 4;
-      InverterState.Flash_Red_Stop_Lamp_Status = (message[1] >> 2) % 4;
-      InverterState.Flash_Multi_Indicator_Lamp_Status = message[1] % 4;
+      InverterState.Flash_Protect_Lamp_Status = CAN_Message[1] >> 6;
+      InverterState.Flash_Amber_Warning_Lamp_Status = (CAN_Message[1] >> 4) % 4;
+      InverterState.Flash_Red_Stop_Lamp_Status = (CAN_Message[1] >> 2) % 4;
+      InverterState.Flash_Multi_Indicator_Lamp_Status = CAN_Message[1] % 4;
 
-      InverterState.DM1_SPN = message[2] + (message[3] << 8);
+      InverterState.DM1_SPN = CAN_Message[2] + (CAN_Message[3] << 8);
 
-      InverterState.DM1_FMI = message[4] % 8;
+      InverterState.DM1_FMI = CAN_Message[4] % 8;
 
-      InverterState.Occurrence_Count = message[5] % 2;
+      InverterState.Occurrence_Count = CAN_Message[5] % 2;
       break;
   }
 }
-
-
