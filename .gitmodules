@@ -1,0 +1,3 @@
+[submodule "ARD1939/CAN_SPEC"]
+	path = ARD1939/CAN_SPEC
+	url = git@github.com:NDSUFormulaE/CAN_SPEC.git
