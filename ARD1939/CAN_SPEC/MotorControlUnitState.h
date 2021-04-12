@@ -19,7 +19,7 @@
 
 #define NUM_MCU_STATES               15
 
-unsigned int MCU_State_Array[] = {
+unsigned int[] MCU_State_Array = {
     MCU_PWR_UP,
     MCU_STDBY,
     MCU_FUNCTIONAL_DIAG,
