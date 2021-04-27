@@ -1333,10 +1333,10 @@ void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message
 
 boolean ARD1939::StateTransitionCheck(){
   switch(InverterState.MCU_State){
-    case MCU_STDBY: return true; break;
-    case MCU_IGNIT_READY: return true; break;
-    case MCU_PWR_READY: return true; break;
-    case MCU_DRIVE_READY: return true; break;
+    case MCU_STDBY: 
+    case MCU_IGNIT_READY: 
+    case MCU_PWR_READY: 
+    case MCU_DRIVE_READY:
     case MCU_NORM_OPS: return true; break;
     default: return false; break;
   }
