@@ -1,6 +1,6 @@
 [submodule "ARD1939/CAN_SPEC"]
-	path = InverterApp/CAN_SPEC
+	path = InverterApp/src/ARD1939/CAN_SPEC
 	url = git@github.com:NDSUFormulaE/CAN_SPEC.git
 [submodule "InverterApp/TaskScheduler"]
-	path = InverterApp/TaskScheduler
+	path = InverterApp/src/TaskScheduler
 	url = git@github.com:NDSUFormulaE/TaskScheduler.git

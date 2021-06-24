@@ -19,8 +19,8 @@
 #include <inttypes.h>
 #include <SPI.h>
 
-#include "ARD1939.h"
-#include "CAN_SPEC/PGN.h"
+#include "src/ARD1939/ARD1939.h"
+#include "src/ARD1939/CAN_SPEC/PGN.h"
 
 ARD1939 j1939;
 
