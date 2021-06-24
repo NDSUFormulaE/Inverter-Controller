@@ -1,33 +1,23 @@
-// ------------------------------------------------------------------------
-// ARD1939 - SAE J1939 Protocol Stack for Arduino Uno and Mega2560
-// ------------------------------------------------------------------------
-//
-// IMPOPRTANT: Depending on the CAN shield used for this programming sample,
-//             please make sure you set the proper CS pin in ARD1939.h.
-//
-//  This Arduino program is free software; you can redistribute it and/or
-//  modify it under the terms of the GNU Lesser General Public
-//  License as published by the Free Software Foundation; either
-//  version 2.1 of the License, or (at your option) any later version.
-
-//  This program is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//  Lesser General Public License for more details.
-
 #include <stdlib.h>
 #include <inttypes.h>
 #include <SPI.h>
 
+// CAN library and PD400 definitions
 #include "src/ARD1939/ARD1939.h"
 #include "src/ARD1939/CAN_SPEC/PGN.h"
 
+// Task Scheduler
+#include "src/TaskScheduler/src/TaskScheduler.h"
+
+// Definitions
 ARD1939 j1939;
+Scheduler taskMan;
 
 extern struct CANVariables InverterState;
 int nCounter = 0;
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
+// TODO: Add tasks for the periodic messages
 
 // ------------------------------------------------------------------------
 //  Setup routine runs on power-up or reset
@@ -66,6 +56,10 @@ void setup()
                NAME_VEHICLE_SYSTEM_INSTANCE,
                NAME_INDUSTRY_GROUP,
                NAME_ARBITRARY_ADDRESS_CAPABLE);  
+
+// Initialize the TaskScheduler
+taskMan.init();
+
 }// end setup
 
 // ------------------------------------------------------------------------
@@ -100,29 +94,33 @@ void loop()
   {
     case ADDRESSCLAIM_INPROGRESS:     
       break;
-      
-    case NORMALDATATRAFFIC:
-      j1939.CANInterpret(&nMsgId, &lPGN, &pMsg[0], &nMsgLen, &nDestAddr, &nSrcAddr, &nPriority);
-      //Log incoming messages to Serial. For Testing.
-      if(nMsgLen != 0){
-        sprintf(sString, "PGN: 0x%X Src: 0x%X Dest: 0x%X ", (int)lPGN, nSrcAddr, nDestAddr);
-        Serial.print(sString);
-        Serial.print("Data: ");
-        for(int nIndex = 0; nIndex < nMsgLen; nIndex++)
-        {          
-          sprintf(sString, "0x%X ", InverterState.Last_Message[nIndex]);
-          Serial.print(sString);
-        }
-        Serial.print("\n\r");
-      }
-      nMsgId = J1939_MSG_NONE;
-      break;
-      
+    
     case ADDRESSCLAIM_FAILED:
+    // TODO: This needs to be way cleaner. We don't want to restart the unit while
+    // we are sending important commands as the PD400 will shut down.
       Serial.print("AddressClaim Failed\n\r");
       resetFunc();
       delay(1000);
       break;
+    
+    case NORMALDATATRAFFIC:
+      j1939.CANInterpret(&nMsgId, &lPGN, &pMsg[0], &nMsgLen, &nDestAddr, &nSrcAddr, &nPriority);
+      //Log incoming messages to Serial. For Testing.
+      // if(nMsgLen != 0){
+      //   sprintf(sString, "PGN: 0x%X Src: 0x%X Dest: 0x%X ", (int)lPGN, nSrcAddr, nDestAddr);
+      //   Serial.print(sString);
+      //   Serial.print("Data: ");
+      //   for(int nIndex = 0; nIndex < nMsgLen; nIndex++)
+      //   {          
+      //     sprintf(sString, "0x%X ", InverterState.Last_Message[nIndex]);
+      //     Serial.print(sString);
+      //   }
+      //   Serial.print("\n\r");
+      // }
+      // nMsgId = J1939_MSG_NONE;
+      break;
+      
+
     
   }// end switch(nJ1939Status)  
 }// end loop
