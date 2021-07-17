@@ -97,38 +97,38 @@ class ARD1939
 {
   public: 
     // Initialization
-    byte Init(int nSystemTime);
-    void SetPreferredAddress(byte nAddr);
-    void SetAddressRange(byte nAddrBottom, byte nAddrTop);
-    void SetNAME(long lIdentityNumber, int nManufacturerCode, byte nFunctionInstance, byte nECUInstance, 
-                           byte nFunction, byte nVehicleSystem, byte nVehicleSystemInstance, byte nIndustryGroup, byte nArbitraryAddressCapable);
-    byte SetMessageFilter(long lPGN);
+    uint8_t Init(int nSystemTime);
+    void SetPreferredAddress(uint8_t nAddr);
+    void SetAddressRange(uint8_t nAddrBottom, uint8_t nAddrTop);
+    void SetNAME(long lIdentityNumber, int nManufacturerCode, uint8_t nFunctionInstance, uint8_t nECUInstance, 
+                           uint8_t nFunction, uint8_t nVehicleSystem, uint8_t nVehicleSystemInstance, uint8_t nIndustryGroup, uint8_t nArbitraryAddressCapable);
+    uint8_t SetMessageFilter(long lPGN);
   
     // Read/Write - Check Status
-    byte Operate(byte* nMsgId, long* lPGN, byte* pMsg, int* nMsgLen, byte* nDestAddr, byte* nSrcAddr, byte* nPriority);
-    byte Transmit(byte nPriority, long lPGN, byte nSourceAddress, byte nDestAddress, byte* pData, int nDataLen);
+    uint8_t Operate(uint8_t* nMsgId, long* lPGN, uint8_t* pMsg, int* nMsgLen, uint8_t* nDestAddr, uint8_t* nSrcAddr, uint8_t* nPriority);
+    uint8_t Transmit(uint8_t nPriority, long lPGN, uint8_t nSourceAddress, uint8_t nDestAddress, uint8_t* pData, int nDataLen);
   
     // Other Application Functions
     void Terminate(void);
-    byte GetSourceAddress(void);
+    uint8_t GetSourceAddress(void);
     void DeleteMessageFilter(long lPGN);
-    void CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message, int* CAN_MessageLen, byte* CAN_DestAddr, byte* CAN_SrcAddr, byte* CAN_Priority);
+    void CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_MessageLen, uint8_t* CAN_DestAddr, uint8_t* CAN_SrcAddr, uint8_t* CAN_Priority);
   private:
-    byte f01(byte, byte*);
+    uint8_t f01(uint8_t, uint8_t*);
     bool f02(void);
-    byte f03(byte*, byte*);
-    byte f04(long*, byte*, int*, byte*, byte*, byte*);
+    uint8_t f03(uint8_t*, uint8_t*);
+    uint8_t f04(long*, uint8_t*, int*, uint8_t*, uint8_t*, uint8_t*);
     void f05(void);
     void f06(struct v35*);
-    bool f07(long*, byte*);
+    bool f07(long*, uint8_t*);
     bool f08(long);
     bool f09(long);
 
 #if TRANSPORT_PROTOCOL == 1
-    byte f10(byte, long, byte, byte, byte*, int);
-    void f11(byte);
-    void f12(byte);
-    byte f13(long, byte*, int, byte, byte, byte);
+    uint8_t f10(uint8_t, long, uint8_t, uint8_t, uint8_t*, int);
+    void f11(uint8_t);
+    void f12(uint8_t);
+    uint8_t f13(long, uint8_t*, int, uint8_t, uint8_t, uint8_t);
 #endif
   
 }; // end class ARD1939

@@ -23,7 +23,7 @@ int nReadPointer;
 // ------------------------------------------------------------------------
 // Initialize the CAN controller
 // ------------------------------------------------------------------------
-byte canInit(void)
+uint8_t canInit(void)
 {
   // Default settings
   nReadPointer = 0;
@@ -39,7 +39,7 @@ byte canInit(void)
 // ------------------------------------------------------------------------
 // Check CAN controller for error
 // ------------------------------------------------------------------------
-byte canCheckError(void)
+uint8_t canCheckError(void)
 {
   if(CAN0.checkError() == 0)
     return 0;
@@ -50,7 +50,7 @@ byte canCheckError(void)
 // ------------------------------------------------------------------------
 // Transmit CAN message
 // ------------------------------------------------------------------------
-byte canTransmit(long lID, unsigned char* pData, int nDataLen)
+uint8_t canTransmit(long lID, unsigned char* pData, int nDataLen)
 {
   
   if(CAN0.sendMsgBuf(lID, CAN_EXTID, nDataLen, pData) == 0)
@@ -63,10 +63,10 @@ byte canTransmit(long lID, unsigned char* pData, int nDataLen)
 // ------------------------------------------------------------------------
 // Receive CAN message
 // ------------------------------------------------------------------------
-byte canReceive(long* lID, unsigned char* pData, int* nDataLen)
+uint8_t canReceive(long* lID, unsigned char* pData, int* nDataLen)
 {
   // Declarations
-  byte nCnt;
+  uint8_t nCnt;
 
   // In case there is a message, put it into the buffer
   while(CAN0.checkReceive() == CAN_MSGAVAIL)

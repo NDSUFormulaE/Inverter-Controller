@@ -50,14 +50,14 @@ v01 v02[MSGFILTERS];
 
 unsigned char v03[] =
 {
-  (byte)(NAME_IDENTITY_NUMBER & 0xFF),
-  (byte)((NAME_IDENTITY_NUMBER >> 8) & 0xFF),
-  (byte)(((NAME_MANUFACTURER_CODE << 5) & 0xFF) | (NAME_IDENTITY_NUMBER >> 16)),
-  (byte)(NAME_MANUFACTURER_CODE >> 3),
-  (byte)((NAME_FUNCTION_INSTANCE << 3) | NAME_ECU_INSTANCE),
-  (byte)(NAME_FUNCTION),
-  (byte)(NAME_VEHICLE_SYSTEM << 1),
-  (byte)((NAME_ARBITRARY_ADDRESS_CAPABLE << 7) | (NAME_INDUSTRY_GROUP << 4) | (NAME_VEHICLE_SYSTEM_INSTANCE))
+  (uint8_t)(NAME_IDENTITY_NUMBER & 0xFF),
+  (uint8_t)((NAME_IDENTITY_NUMBER >> 8) & 0xFF),
+  (uint8_t)(((NAME_MANUFACTURER_CODE << 5) & 0xFF) | (NAME_IDENTITY_NUMBER >> 16)),
+  (uint8_t)(NAME_MANUFACTURER_CODE >> 3),
+  (uint8_t)((NAME_FUNCTION_INSTANCE << 3) | NAME_ECU_INSTANCE),
+  (uint8_t)(NAME_FUNCTION),
+  (uint8_t)(NAME_VEHICLE_SYSTEM << 1),
+  (uint8_t)((NAME_ARBITRARY_ADDRESS_CAPABLE << 7) | (NAME_INDUSTRY_GROUP << 4) | (NAME_VEHICLE_SYSTEM_INSTANCE))
 };
 
 #define v04                     4
@@ -72,16 +72,16 @@ long v05[] =
 struct v06
 {
   bool v07;
-  byte v08;
+  uint8_t v08;
   bool v09;
   bool v10;
   bool v11;
-  byte v12;
-  byte v13;
-  byte v14;
+  uint8_t v12;
+  uint8_t v13;
+  uint8_t v14;
   bool v15;
-  byte v16;
-  byte v17;
+  uint8_t v16;
+  uint8_t v17;
 };
 struct v06 v18;
 
@@ -93,19 +93,19 @@ struct v06 v18;
   
   struct v19
   {
-    byte v20;
+    uint8_t v20;
     bool v21;
     bool v22;
     bool v23;
     bool v24;
     long v25;
-    byte v26;
-    byte v27;
-    byte v28;
-    byte v29;
-    byte v30[J1939_MSGLEN];
+    uint8_t v26;
+    uint8_t v27;
+    uint8_t v28;
+    uint8_t v29;
+    uint8_t v30[J1939_MSGLEN];
     int v31;
-    byte v32;
+    uint8_t v32;
   };
   v19 v33;
   v19 v34;
@@ -123,8 +123,8 @@ struct v06 v18;
   #define d12	       0
   #define d13      1
 
-  byte v62[] = {0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00};
-  byte v63[8];
+  uint8_t v62[] = {0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00};
+  uint8_t v63[8];
 #endif
 
 struct v35 v38;
@@ -176,15 +176,15 @@ int v50;
 #endif
 
 int v60[] = {8, 9, 10, 12, 15};
-byte v61;
+uint8_t v61;
 
-byte v64;
-extern byte canInit(void);
-extern byte canCheckError(void);
-extern byte canTransmit(long, unsigned char*, int);
-extern byte canReceive(long*, unsigned char*, int*);
+uint8_t v64;
+extern uint8_t canInit(void);
+extern uint8_t canCheckError(void);
+extern uint8_t canTransmit(long, unsigned char*, int);
+extern uint8_t canReceive(long*, unsigned char*, int*);
 struct CANVariables InverterState = {};
-byte ARD1939::Init(int v80)
+uint8_t ARD1939::Init(int v80)
 {
   int v65;
   f06(&v38);
@@ -239,10 +239,10 @@ void ARD1939::Terminate(void)
   Init(SYSTEM_TIME);
 }
 
-byte ARD1939::Operate(byte* v70, long* v25, byte* v71, int* v31, byte* v67, byte* v66, byte* v76)
+uint8_t ARD1939::Operate(uint8_t* v70, long* v25, uint8_t* v71, int* v31, uint8_t* v67, uint8_t* v66, uint8_t* v76)
 {
-  byte v68;
-  byte v82;
+  uint8_t v68;
+  uint8_t v82;
   int v65;
   f05();
   *v70 = f04(v25, &v71[0], v31, v67, v66, v76);
@@ -386,10 +386,10 @@ byte ARD1939::Operate(byte* v70, long* v25, byte* v71, int* v31, byte* v67, byte
   return v68;
 }
 
-byte ARD1939::f01(byte v16, byte* v91)
+uint8_t ARD1939::f01(uint8_t v16, uint8_t* v91)
 {
-  byte v68;
-  byte v82;
+  uint8_t v68;
+  uint8_t v82;
   v68 = ADDRESSCLAIM_INPROGRESS;
   if(v18.v11 == true)
     v68 = ADDRESSCLAIM_FAILED;
@@ -554,9 +554,9 @@ bool ARD1939::f02(void)
   return v72;
 }
 
-byte ARD1939::f03(byte* v92, byte* v93)
+uint8_t ARD1939::f03(uint8_t* v92, uint8_t* v93)
 {
-  byte v65;
+  uint8_t v65;
   for(v65 = 8; v65 > 0; v65--)
   {
     if(v92[v65-1] != v93[v65-1])
@@ -570,7 +570,7 @@ byte ARD1939::f03(byte* v92, byte* v93)
   return 0;
 }
 
-byte ARD1939::f04(long* v25, byte* v71, int* v31, byte* v67, byte* v66, byte* v76)
+uint8_t ARD1939::f04(long* v25, uint8_t* v71, int* v31, uint8_t* v67, uint8_t* v66, uint8_t* v76)
 {
   long v78;
   long v74;
@@ -582,14 +582,14 @@ byte ARD1939::f04(long* v25, byte* v71, int* v31, byte* v67, byte* v66, byte* v7
   if(canReceive(&v74, &v71[0], v31) == 0)
   {
     v78 = v74 & 0x1C000000;
-    *v76 = (byte)(v78 >> 26);
+    *v76 = (uint8_t)(v78 >> 26);
     *v25 = v74 & 0x01FFFF00;
     *v25 = *v25 >> 8;
-    *v66 = (byte)(v74 & 0x000000FF);
+    *v66 = (uint8_t)(v74 & 0x000000FF);
     *v67 = GLOBALADDRESS;
     if(f08(*v25) == true)
     {
-      *v67 = (byte)(*v25 & 0xFF);
+      *v67 = (uint8_t)(*v25 & 0xFF);
       *v25 = *v25 & 0x01FF00;
     }
     if(f07(v25, &v71[0]) == true)
@@ -601,7 +601,7 @@ byte ARD1939::f04(long* v25, byte* v71, int* v31, byte* v67, byte* v66, byte* v7
     return J1939_MSG_NONE;
 }
 
-byte ARD1939::Transmit(byte v76, long v25, byte v17, byte v67ess, byte* v79, int v73)
+uint8_t ARD1939::Transmit(uint8_t v76, long v25, uint8_t v17, uint8_t v67ess, uint8_t* v79, int v73)
 {
   long v74;
   if(v73 > J1939_MSGLEN)
@@ -667,15 +667,15 @@ void ARD1939::f06(struct v35* v75)
   v75->v37 = false;
 }
 
-bool ARD1939::f07(long* v25, byte* v83)
+bool ARD1939::f07(long* v25, uint8_t* v83)
 {
   bool v69;
-  byte v65;
-  byte v84;
-  byte v85;
+  uint8_t v65;
+  uint8_t v84;
+  uint8_t v85;
   v69 = false;
-  v84 = (byte)((*v25 & 0x00FF00) >> 8);
-  v85 = (byte)(*v25 & 0x0000FF);
+  v84 = (uint8_t)((*v25 & 0x00FF00) >> 8);
+  v85 = (uint8_t)(*v25 & 0x0000FF);
   switch(v84)
   {
     case d47:
@@ -719,38 +719,38 @@ bool ARD1939::f08(long v25)
   return false;
 }
 
-byte ARD1939::GetSourceAddress(void)
+uint8_t ARD1939::GetSourceAddress(void)
 {
    return v18.v17;
 }
 
-void ARD1939::SetPreferredAddress(byte v86)
+void ARD1939::SetPreferredAddress(uint8_t v86)
 {
   v18.v12 = v86;
 }
 
-void ARD1939::SetAddressRange(byte v87, byte v88)
+void ARD1939::SetAddressRange(uint8_t v87, uint8_t v88)
 {
   v18.v13 = v87;
   v18.v14 = v88;
 }
 
-void ARD1939::SetNAME(long v81, int nManufacturerCode, byte nFunctionInstance, byte nECUInstance,
-                  byte nFunction, byte nVehicleSystem, byte nVehicleSystemInstance, byte nIndustryGroup, byte nArbitraryAddressCapable)
+void ARD1939::SetNAME(long v81, int nManufacturerCode, uint8_t nFunctionInstance, uint8_t nECUInstance,
+                  uint8_t nFunction, uint8_t nVehicleSystem, uint8_t nVehicleSystemInstance, uint8_t nIndustryGroup, uint8_t nArbitraryAddressCapable)
 {
-  v03[0] = (byte)(v81 & 0xFF);
-  v03[1] = (byte)((v81 >> 8) & 0xFF);
-  v03[2] = (byte)(((nManufacturerCode << 5) & 0xFF) | (v81 >> 16));
-  v03[3] = (byte)(nManufacturerCode >> 3);
-  v03[4] = (byte)((nFunctionInstance << 3) | nECUInstance);
-  v03[5] = (byte)(nFunction);
-  v03[6] = (byte)(nVehicleSystem << 1);
-  v03[7] = (byte)((nArbitraryAddressCapable << 7) | (nIndustryGroup << 4) | (nVehicleSystemInstance));
+  v03[0] = (uint8_t)(v81 & 0xFF);
+  v03[1] = (uint8_t)((v81 >> 8) & 0xFF);
+  v03[2] = (uint8_t)(((nManufacturerCode << 5) & 0xFF) | (v81 >> 16));
+  v03[3] = (uint8_t)(nManufacturerCode >> 3);
+  v03[4] = (uint8_t)((nFunctionInstance << 3) | nECUInstance);
+  v03[5] = (uint8_t)(nFunction);
+  v03[6] = (uint8_t)(nVehicleSystem << 1);
+  v03[7] = (uint8_t)((nArbitraryAddressCapable << 7) | (nIndustryGroup << 4) | (nVehicleSystemInstance));
 }
 
-byte ARD1939::SetMessageFilter(long v25)
+uint8_t ARD1939::SetMessageFilter(long v25)
 {
-  byte v94;
+  uint8_t v94;
   int v65;
   v94 = ERR;
   if((v25 & 0x00FF00) == d31)
@@ -809,9 +809,9 @@ bool ARD1939::f09(long v25)
 }
 
 #if TRANSPORT_PROTOCOL == 1
-byte ARD1939::f13(long v25, byte* v71, int v31, byte v67, byte v66, byte v76)
+uint8_t ARD1939::f13(long v25, uint8_t* v71, int v31, uint8_t v67, uint8_t v66, uint8_t v76)
 {
-  byte v94;
+  uint8_t v94;
   int nPointer;
   int v65;
   v94 = OK;
@@ -820,13 +820,13 @@ byte ARD1939::f13(long v25, byte* v71, int v31, byte v67, byte v66, byte v76)
       if(v33.v22 == false)
       {
         v62[0] = d04;
-        v62[1] = (byte)(v33.v31 & 0xFF);
-        v62[2] = (byte)(v33.v31 >> 8);
+        v62[1] = (uint8_t)(v33.v31 & 0xFF);
+        v62[2] = (uint8_t)(v33.v31 >> 8);
         v62[3] = v33.v28;
         v62[4] = 0xFF;
-        v62[5] = (byte)(v33.v25 & 0x0000FF);
-        v62[6] = (byte)((v33.v25 & 0x00FF00) >> 8);
-        v62[7] = (byte)(v33.v25 >> 16);
+        v62[5] = (uint8_t)(v33.v25 & 0x0000FF);
+        v62[6] = (uint8_t)((v33.v25 & 0x00FF00) >> 8);
+        v62[7] = (uint8_t)(v33.v25 >> 16);
         v94 = Transmit(d38, d36, v33.v26, GLOBALADDRESS, &v62[0], 8);
         v40.v36 = v51;
         v40.v21 = true;        
@@ -913,13 +913,13 @@ byte ARD1939::f13(long v25, byte* v71, int v31, byte v67, byte v66, byte v76)
       if(v34.v23 == false)
       {
         v62[0] = d05;
-        v62[1] = (byte)(v34.v31 & 0xFF);
-        v62[2] = (byte)(v34.v31 >> 8);
+        v62[1] = (uint8_t)(v34.v31 & 0xFF);
+        v62[2] = (uint8_t)(v34.v31 >> 8);
         v62[3] = v34.v28;
         v62[4] = 0xFF;
-        v62[5] = (byte)(v34.v25 & 0x0000FF);
-        v62[6] = (byte)((v34.v25 & 0x00FF00) >> 8);
-        v62[7] = (byte)(v34.v25 >> 16);
+        v62[5] = (uint8_t)(v34.v25 & 0x0000FF);
+        v62[6] = (uint8_t)((v34.v25 & 0x00FF00) >> 8);
+        v62[7] = (uint8_t)(v34.v25 >> 16);
         v94 = Transmit(d38, d36, v34.v26, v34.v27, &v62[0], 8);
         v43.v36 = v54;
         v43.v21 = true;        
@@ -934,9 +934,9 @@ byte ARD1939::f13(long v25, byte* v71, int v31, byte v67, byte v66, byte v76)
           v62[2] = 0xFF;
           v62[3] = 0xFF;
           v62[4] = 0xFF;
-          v62[5] = (byte)(v34.v25 & 0x0000FF);
-          v62[6] = (byte)((v34.v25 & 0x00FF00) >> 8);
-          v62[7] = (byte)(v34.v25 >> 16);
+          v62[5] = (uint8_t)(v34.v25 & 0x0000FF);
+          v62[6] = (uint8_t)((v34.v25 & 0x00FF00) >> 8);
+          v62[7] = (uint8_t)(v34.v25 >> 16);
           v94 = Transmit(d38, d36, v34.v26, v34.v27, &v62[0], 8);
           f12(d12);
         }
@@ -974,9 +974,9 @@ byte ARD1939::f13(long v25, byte* v71, int v31, byte v67, byte v66, byte v76)
           v62[2] = 0xFF;
           v62[3] = 0xFF;
           v62[4] = 0xFF;
-          v62[5] = (byte)(v34.v25 & 0x0000FF);
-          v62[6] = (byte)((v34.v25 & 0x00FF00) >> 8);
-          v62[7] = (byte)(v34.v25 >> 16);
+          v62[5] = (uint8_t)(v34.v25 & 0x0000FF);
+          v62[6] = (uint8_t)((v34.v25 & 0x00FF00) >> 8);
+          v62[7] = (uint8_t)(v34.v25 >> 16);
           v94 = Transmit(d38, d36, v34.v26, v34.v27, &v62[0], 8);
           f12(d12);
         }
@@ -1048,9 +1048,9 @@ byte ARD1939::f13(long v25, byte* v71, int v31, byte v67, byte v66, byte v76)
         v62[2] = 0xFF;
         v62[3] = 0xFF;
         v62[4] = 0xFF;
-        v62[5] = (byte)(v34.v25 & 0x0000FF);
-        v62[6] = (byte)((v34.v25 & 0x00FF00) >> 8);
-        v62[7] = (byte)(v34.v25 >> 16);
+        v62[5] = (uint8_t)(v34.v25 & 0x0000FF);
+        v62[6] = (uint8_t)((v34.v25 & 0x00FF00) >> 8);
+        v62[7] = (uint8_t)(v34.v25 >> 16);
         v94 = Transmit(d38, d36, v34.v27, v34.v26, &v62[0], 8);
       }
       if(v25 == d39 && v67 == v34.v27 && v66 == v34.v26)
@@ -1061,13 +1061,13 @@ byte ARD1939::f13(long v25, byte* v71, int v31, byte v67, byte v66, byte v76)
         if(++v34.v29 == v34.v28)
         {
           v62[0] = d07;
-          v62[1] = (byte)(v34.v31 & 0x00FF);         
-          v62[2] = (byte)((v34.v31 & 0x00FF) >> 8);   
+          v62[1] = (uint8_t)(v34.v31 & 0x00FF);         
+          v62[2] = (uint8_t)((v34.v31 & 0x00FF) >> 8);   
           v62[3] = v34.v28;
           v62[4] = 0xFF;
-          v62[5] = (byte)(v34.v25 & 0x0000FF);
-          v62[6] = (byte)((v34.v25 & 0x00FF00) >> 8);
-          v62[7] = (byte)(v34.v25 >> 16);
+          v62[5] = (uint8_t)(v34.v25 & 0x0000FF);
+          v62[6] = (uint8_t)((v34.v25 & 0x00FF00) >> 8);
+          v62[7] = (uint8_t)(v34.v25 >> 16);
           v94 = Transmit(d38, d36, v34.v27, v34.v26, &v62[0], 8);
           f12(d13);
           v34.v32 = true;
@@ -1077,9 +1077,9 @@ byte ARD1939::f13(long v25, byte* v71, int v31, byte v67, byte v66, byte v76)
   return v94;
 }
 
-byte ARD1939::f10(byte v76, long v25, byte v17, byte v67ess, byte* v79, int v77)
+uint8_t ARD1939::f10(uint8_t v76, long v25, uint8_t v17, uint8_t v67ess, uint8_t* v79, int v77)
 {
-  byte v68;
+  uint8_t v68;
   int v65;    
   struct v19* v89;
   v68 = OK;
@@ -1116,7 +1116,7 @@ byte ARD1939::f10(byte v76, long v25, byte v17, byte v67ess, byte* v79, int v77)
   return v68;
 }
 
-void ARD1939::f11(byte v90)
+void ARD1939::f11(uint8_t v90)
 {
 	if(v90 == d12)
 	{
@@ -1135,7 +1135,7 @@ void ARD1939::f11(byte v90)
 	f06(&v41);
 }
 
-void ARD1939::f12(byte v90)
+void ARD1939::f12(uint8_t v90)
 {
 	if(v90 == d12)
 	{
@@ -1164,7 +1164,7 @@ void ARD1939::f12(byte v90)
 
 
 
-void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message, int* CAN_MessageLen, byte* CAN_DestAddr, byte* CAN_SrcAddr, byte* CAN_Priority){
+void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_MessageLen, uint8_t* CAN_DestAddr, uint8_t* CAN_SrcAddr, uint8_t* CAN_Priority){
 
   InverterState.Last_Message = CAN_Message;
 
@@ -1183,9 +1183,9 @@ void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message
           if(InverterState.Nametable[i].SA == 0)
             break;
         }
-        InverterState.Nametable[i].SA = (byte)*CAN_SrcAddr;
+        InverterState.Nametable[i].SA = (uint8_t)*CAN_SrcAddr;
         for(int j = 0; j< int(*CAN_MessageLen);j++){
-          InverterState.Nametable[i].MESSAGE[j] = (byte)*(CAN_Message + j);
+          InverterState.Nametable[i].MESSAGE[j] = (uint8_t)*(CAN_Message + j);
         }
       }
       break;
@@ -1206,7 +1206,7 @@ void ARD1939::CANInterpret(byte* CAN_messageID, long* CAN_PGN, byte* CAN_Message
         InverterState.DC_Bus_Voltage = (CAN_Message[3] + (CAN_Message[4] << 8)) * 0.03125;                   // Units: Volts
         InverterState.Derate_Owner = CAN_Message[5];
         InverterState.Diag_Function = CAN_Message[6] + ((CAN_Message[7] >> 3) << 8);
-        InverterState.Diag_Status = CAN_Message[7] % 8; // pulls the last 3 bits from the byte
+        InverterState.Diag_Status = CAN_Message[7] % 8; // pulls the last 3 bits from the uint8_t
       }
       // PROGNOSTIC1_RMS_CURRENT
       else if(CAN_Message[0] == 0x7A){

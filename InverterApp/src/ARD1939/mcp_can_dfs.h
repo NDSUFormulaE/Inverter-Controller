@@ -32,7 +32,7 @@
 #endif
 
 #ifndef INT8U
-#define INT8U byte
+#define INT8U uint8_t
 #endif
 
 // if print debug information
