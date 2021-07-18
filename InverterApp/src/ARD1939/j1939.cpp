@@ -1170,7 +1170,7 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
 
   switch(int(*CAN_PGN)){
     case ADDRESS_CLAIM_RESPONSE:
-      
+    {
       bool found = false;
       for(int i = 0; i < NAMETABLE_LEN;i++){
         if(InverterState.Nametable[i].SA == *CAN_SrcAddr){
@@ -1189,11 +1189,11 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
         }
       }
       break;
-    
+    }
     // Shared PGN for STATUS1_RELTORQUE_SPEED, STATUS2_STATE_VOLTAGE, PROGNOSTIC1_RMS_CURRENT, PROGNOSTIC2_DIAGNOSTIC,
     // PROGNOSTIC3_DIAGNOSTIC & PROGNOSTIC5_POSITION
     case STATUS1_RELTORQUE_SPEED:
-
+    {
       // STATUS1_RELTORQUE_SPEED
       if(CAN_Message[0] == 0x79 && CAN_Message[1] == 0xFF){
         InverterState.Avg_Torque_Percent = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.00390625) - 125.0;
@@ -1233,10 +1233,10 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
         InverterState.Calculated_Pos_Offset = (CAN_Message[4] + (CAN_Message[5] << 8)) * 0.0078125;          // Units: Elec. Degrees
       }
       break;
-
+    }
     // Shared PGN for STATUS3_ABSTORQUE_SPEED, DC_LINK_PWR_STATUS && VOLTAGE_RMS1
     case STATUS3_ABSTORQUE_SPEED:
-
+    {
       // STATUS3_ABSTORQUE_SPEED
       if(CAN_Message[0] == 0x00 && CAN_Message[0] == 0x51){
         InverterState.Avg_Abs_Torque = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.1) - 3200.0;            // Units: Nm
@@ -1257,10 +1257,10 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       }
 
       break;
-
+    }
     // Shared PGN for STATUS4_TORQUE_PWRSTAGE_OVRLD, INVERTER_TEMP1_IGBT, AC_SUPPLY_STATUS & DC_LINK_PWR_CURRENT_STATUS
     case STATUS4_TORQUE_PWRSTAGE_OVRLD:
-
+    {
       // STATUS4_TORQUE_PWRSTAGE_OVRLD
       if(CAN_Message[0] == 0x32 && CAN_Message[0] == 0xFF){
       InverterState.Neg_Torque_Available = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.1) - 3200.0;        // Units: Nm
@@ -1297,8 +1297,9 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       }
 
       break;
-
+    }
     case INVERTER_TEMP2_MACHINE:
+    {
       if(CAN_Message[0] == 0xE4){
         InverterState.Motor_Temp_1 = CAN_Message[1] - 40;                                              // Units: degrees Celcius
         InverterState.Motor_Temp_2 = CAN_Message[2] - 40;                                              // Units: degrees Celcius
@@ -1309,8 +1310,9 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
         InverterState.Inverter_Coolant_Temp = CAN_Message[7] - 40;                                     // Units: degrees Celcius
       }
       break;
-
+    }
     case DM1:
+    {
       InverterState.Protect_Lamp_Status = CAN_Message[0] >> 6;
       InverterState.Amber_Warning_Lamp_Status = (CAN_Message[0] >> 4) % 4;
       InverterState.Red_Stop_Lamp_Status = (CAN_Message[0] >> 2) % 4;
@@ -1327,5 +1329,6 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
 
       InverterState.Occurrence_Count = CAN_Message[5] % 2;
       break;
+    }
   }
 }

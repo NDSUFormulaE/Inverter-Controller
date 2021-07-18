@@ -28,6 +28,13 @@ int TaskScheduler::Init()
     return 0;
 }
 
+void TaskScheduler::RunLoop()
+{
+    TaskScheduler::SendMessages();
+    // Caused issues with bytes to send over CAN. Test with the Due.
+    TaskScheduler::RecieveMessages();
+}
+
 void TaskScheduler::SendMessages()
 {
     long time;
@@ -44,6 +51,25 @@ void TaskScheduler::SendMessages()
                             CANTasks[i].task.msgLen);
             CANTasks[i].lastRunTime = millis();
         }
+    }
+}
+
+void TaskScheduler::RecieveMessages()
+{
+    // J1939 Variables
+    uint8_t MsgId;
+    uint8_t DestAddr;
+    uint8_t SrcAddr;
+    uint8_t Priority;
+    uint8_t J1939Status;
+    int MsgLen;
+    long PGN;
+    uint8_t Msg[J1939_MSGLEN];
+
+    J1939Status = j1939.Operate(&MsgId, &PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
+    if (J1939Status == NORMALDATATRAFFIC)
+    {
+        j1939.CANInterpret(&PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
     }
 }
 

@@ -29,10 +29,10 @@ void setup()
     }
     // Example for Multiple Periodic messages at once.
     taskMan.AddCANTask(18, COMMAND2_SPEED, 0xF1, 0xFF, 8, 10, heartbeat);
-    taskMan.AddCANTask(18, COMMAND2_SPEED, 0xF1, 0xFF, 8,100, heartbeat2);
+    taskMan.AddCANTask(18, COMMAND2_SPEED, 0xF1, 0xFF, 8, 12, heartbeat2);
 }// end setup
 
 void loop()
 {
-    taskMan.SendMessages();
+    taskMan.RunLoop();
 }// end loop

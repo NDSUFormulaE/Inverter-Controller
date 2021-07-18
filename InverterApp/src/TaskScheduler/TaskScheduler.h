@@ -41,9 +41,11 @@ class TaskScheduler
         MsgReturn GetMsg(int taskIndex);
         void UpdateMsg(int taskIndex, int msg[], int msgLen);
         void UpdateMsgByte(int taskIndex, int byte, int msgIndex);
-        void SendMessages();
-        ARD1939 j1939;
+        void RunLoop();
     private:
+        void SendMessages();
+        void RecieveMessages();
         int FirstFreeInArray();
         InitializedCANTask CANTasks[MAX_TASKS];
+        ARD1939 j1939;
 };
