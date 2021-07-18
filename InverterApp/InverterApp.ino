@@ -27,6 +27,7 @@ void setup()
         delay(500);
         resetFunc(); // If CAN Controller doesnt init correctly, wait 500ms then try again.
     }
+    // Example for Multiple Periodic messages at once.
     taskMan.AddCANTask(18, COMMAND2_SPEED, 0xF1, 0xFF, 8, 10, heartbeat);
     taskMan.AddCANTask(18, COMMAND2_SPEED, 0xF1, 0xFF, 8,100, heartbeat2);
 }// end setup
