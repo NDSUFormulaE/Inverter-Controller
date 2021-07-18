@@ -27,13 +27,8 @@ void setup()
         delay(500);
         resetFunc(); // If CAN Controller doesnt init correctly, wait 500ms then try again.
     }
-
-    //Initiate Serial communication.
-    Serial.begin(MONITOR_BAUD_RATE);
-    Serial.print("Serial Open\n\r");
-
-    taskMan.AddCANTask(18, COMMAND2_SPEED, 0xF1, 0xFF, 8, 20000, heartbeat);
-    //taskMan.AddCANTask(18, COMMAND2_SPEED, 0xF1, 0xFF, 8,100, heartbeat2);
+    taskMan.AddCANTask(18, COMMAND2_SPEED, 0xF1, 0xFF, 8, 10, heartbeat);
+    taskMan.AddCANTask(18, COMMAND2_SPEED, 0xF1, 0xFF, 8,100, heartbeat2);
 }// end setup
 
 void loop()

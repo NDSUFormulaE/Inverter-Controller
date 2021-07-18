@@ -7,7 +7,7 @@ ARD1939 j1939;
 int TaskScheduler::Init()
 {
     // Initialize the J1939 protocol including CAN settings
-    if (j1939.Init(SYSTEM_TIME) != 0))
+    if (j1939.Init(SYSTEM_TIME) != 0)
     {
         return 1;
     }    
@@ -30,26 +30,19 @@ int TaskScheduler::Init()
 
 void TaskScheduler::SendMessages()
 {
+    long time;
     for (int i = 0; i < MAX_TASKS; i++)
     {
-        if (CANTasks[i].initialized == true)
+        time = millis();
+        if (CANTasks[i].initialized == true && ((time - CANTasks[i].lastRunTime) >= CANTasks[i].task.interval))
         {
-            InitializedCANTask currentTask = CANTasks[i];
-            long time = millis();
-            Serial.print(time);
-            Serial.print("\n\r");
-            Serial.print(currentTask.lastRunTime);
-            Serial.print("\n\r");
-            if((time - currentTask.lastRunTime) >= currentTask.task.interval)
-            {
-                j1939.Transmit(currentTask.task.priority,
-                               currentTask.task.PGN,
-                               currentTask.task.srcAddr,
-                               currentTask.task.destAddr,
-                               &currentTask.task.msg[0],
-                               currentTask.task.msgLen);
-                currentTask.lastRunTime = time;
-            }
+            j1939.Transmit(CANTasks[i].task.priority,
+                            CANTasks[i].task.PGN,
+                            CANTasks[i].task.srcAddr,
+                            CANTasks[i].task.destAddr,
+                            &CANTasks[i].task.msg[0],
+                            CANTasks[i].task.msgLen);
+            CANTasks[i].lastRunTime = millis();
         }
     }
 }
@@ -66,7 +59,7 @@ int TaskScheduler::AddCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8
         CANTasks[firstFree].task.destAddr = destAddr;
         CANTasks[firstFree].task.msgLen = msgLen;
         CANTasks[firstFree].task.interval = interval;
-        for (int i = 0; i < J1939_MSGLEN; i++)
+        for (int i = 0; i < msgLen; i++)
         {
             CANTasks[firstFree].task.msg[i] = msg[i];
         }
