@@ -40,6 +40,7 @@ class TaskScheduler
         void RemoveCANTask(int taskIndex);
         MsgReturn GetMsg(int taskIndex);
         void UpdateMsg(int taskIndex, int msg[], int msgLen);
+        void UpdateMsgByte(int taskIndex, int byte, int msgIndex);
         void SendMessages();
         ARD1939 j1939;
     private:

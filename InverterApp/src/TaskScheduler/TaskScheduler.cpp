@@ -34,7 +34,7 @@ void TaskScheduler::SendMessages()
     for (int i = 0; i < MAX_TASKS; i++)
     {
         time = millis();
-        if (CANTasks[i].initialized == true && ((time - CANTasks[i].lastRunTime) >= CANTasks[i].task.interval))
+        if (CANTasks[i].initialized == true && (CANTasks[i].lastRunTime == 0) || ((time - CANTasks[i].lastRunTime) >= CANTasks[i].task.interval))
         {
             j1939.Transmit(CANTasks[i].task.priority,
                             CANTasks[i].task.PGN,
@@ -64,10 +64,16 @@ int TaskScheduler::AddCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8
             CANTasks[firstFree].task.msg[i] = msg[i];
         }
         CANTasks[firstFree].initialized = true;
+        CANTasks[firstFree].lastRunTime = 0;
     }
     return firstFree;
 }
 
+void RemoveCANTask(int taskIndex)
+{
+    CANTasks[taskIndex].initialized = false;
+    CANTasks[taskIndex].lastRunTime = 0;
+}
 
 //// Message Manipulation
 MsgReturn TaskScheduler::GetMsg(int taskIndex)
@@ -82,6 +88,11 @@ void TaskScheduler::UpdateMsg(int taskIndex, int * msg, int msgLen)
     {
         CANTasks[taskIndex].task.msg[i] = msg[i];
     }
+}
+
+void TaskScheduler::UpdateMsgByte(int taskIndex, int byte, int msgIndex)
+{
+        CANTasks[taskIndex].task.msg[msgIndex] = byte;
 }
 
 //// Private Functions
