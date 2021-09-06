@@ -114,6 +114,7 @@ class ARD1939
     uint8_t GetSourceAddress(void);
     void DeleteMessageFilter(long lPGN);
     void CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_MessageLen, uint8_t* CAN_DestAddr, uint8_t* CAN_SrcAddr, uint8_t* CAN_Priority);
+    bool CheckValidState(void);
   private:
     uint8_t f01(uint8_t, uint8_t*);
     bool f02(void);
