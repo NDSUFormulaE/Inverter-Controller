@@ -27,7 +27,8 @@
 
 #if ARD1939VERSION == 1
   #define TRANSPORT_PROTOCOL                    1
-  #define J1939_MSGLEN                          256
+  #define J1939_MSGLEN                          8
+  
   #define MSGFILTERS                            10
 #endif
 

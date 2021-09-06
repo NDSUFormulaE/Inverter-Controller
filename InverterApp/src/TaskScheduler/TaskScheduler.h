@@ -5,7 +5,7 @@
 #include "../ARD1939/ARD1939.h"
 
 // "#defines"
-enum {MAX_TASKS = 2};
+enum {MAX_TASKS = 20};
 
 // Task Structure Def
 struct CANTask
