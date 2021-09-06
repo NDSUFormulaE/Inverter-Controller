@@ -41,7 +41,7 @@ void TaskScheduler::SendMessages()
     for (int i = 0; i < MAX_TASKS; i++)
     {
         time = millis();
-        if (CANTasks[i].initialized == true && (CANTasks[i].lastRunTime == 0) || ((time - CANTasks[i].lastRunTime) >= CANTasks[i].task.interval))
+        if (CANTasks[i].initialized == true && ((CANTasks[i].lastRunTime == 0) || (time - CANTasks[i].lastRunTime) >= CANTasks[i].task.interval))
         {
             j1939.Transmit(CANTasks[i].task.priority,
                             CANTasks[i].task.PGN,
