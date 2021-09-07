@@ -17,7 +17,8 @@ void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
 // TODO: Add tasks for the periodic messages
 uint8_t heartbeat[] = {1,2,3,4,5,6,7,8};
-uint8_t heartbeat2[] = {8,7,6,5,4,3,2,1};
+
+//bruh
 
 void setup()
 {
