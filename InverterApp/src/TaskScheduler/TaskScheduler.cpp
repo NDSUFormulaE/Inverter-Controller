@@ -4,12 +4,12 @@ InitializedCANTask CANTasks[MAX_TASKS];
 ARD1939 j1939;
 
 //// Main Tasks
-int TaskScheduler::Init()
+bool TaskScheduler::Init()
 {
     // Initialize the J1939 protocol including CAN settings
     if (j1939.Init(SYSTEM_TIME) != 0)
     {
-        return 1;
+        return false;
     }    
     // Set the preferred address and address range
     j1939.SetPreferredAddress(SA_PREFERRED);
@@ -25,7 +25,12 @@ int TaskScheduler::Init()
                 NAME_VEHICLE_SYSTEM_INSTANCE,
                 NAME_INDUSTRY_GROUP,
                 NAME_ARBITRARY_ADDRESS_CAPABLE);  
-    return 0;
+    return true;
+}
+
+uint8_t TaskScheduler::GetSourceAddress()
+{
+    return j1939.GetSourceAddress();
 }
 
 void TaskScheduler::RunLoop()

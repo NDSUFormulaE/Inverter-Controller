@@ -2,37 +2,46 @@
 #include <inttypes.h>
 #include <SPI.h>
 
-// CAN library and PD400 definitions
-
+//// CAN library and PD400 definitions
 #include "src/ARD1939/CAN_SPEC/PGN.h"
 
-// Task Scheduler
+//// Subsystem imports
 #include "src/TaskScheduler/TaskScheduler.h"
+#include "src/gpioHandler/gpioHandler.h"
 
-// Definitions
-
-TaskScheduler taskMan;
-extern struct CANVariables InverterState;
+//// Definitions
+// Reset function
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
+#define InverterSA 0xA2 // Shouldn't be hard coded
 
-// TODO: Add tasks for the periodic messages
-uint8_t heartbeat[] = {1,2,3,4,5,6,7,8};
-uint8_t heartbeat2[] = {8,7,6,5,4,3,2,1};
+// Managers
+TaskScheduler taskMan;
+gpioHandler gpioMan;
 
+// Imports
+extern struct CANVariables InverterState;
+// Variable Definitions
+int SpeedCANMsgIndex;
+uint16_t CurrentPedalSpeed;
+
+// Default Message bytearrays
+uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x1F};
+
+//// Functions
 void setup()
 {
-    int TaskSchedulerInit = taskMan.Init();
-    if (TaskSchedulerInit != 0)
+    if ((taskMan.Init() == false) || (gpioMan.Init() == false))
     {
         delay(500);
         resetFunc(); // If CAN Controller doesnt init correctly, wait 500ms then try again.
     }
-    // Example for Multiple Periodic messages at once.
-    taskMan.AddCANTask(18, COMMAND2_SPEED, 0xF1, 0xFF, 8, 10, heartbeat);
-    taskMan.AddCANTask(18, COMMAND2_SPEED, 0xF1, 0xFF, 8, 12, heartbeat2);
-}// end setup
+    SpeedCANMsgIndex = taskMan.AddCANTask(0x18, COMMAND2_SPEED, taskMan.GetSourceAddress(), 0xA2, 8, 15, DefaultSpeedArray);
+}
 
 void loop()
 {
+    CurrentPedalSpeed = gpioMan.GetPedalSpeed();
+    taskMan.UpdateMsgByte(SpeedCANMsgIndex, CurrentPedalSpeed % 0xFF ,2);
+    taskMan.UpdateMsgByte(SpeedCANMsgIndex, CurrentPedalSpeed >> 8, 3);
     taskMan.RunLoop();
-}// end loop
+}
