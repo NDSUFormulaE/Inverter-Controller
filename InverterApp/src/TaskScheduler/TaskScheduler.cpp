@@ -1,4 +1,6 @@
 #include "TaskScheduler.h"
+#include "../ARD1939/CAN_SPEC/StateTransition.h"
+#include "../ARD1939/CAN_SPEC/MotorControlUnitState.h"
 
 InitializedCANTask CANTasks[MAX_TASKS];
 ARD1939 j1939;
@@ -119,6 +121,140 @@ void TaskScheduler::UpdateMsg(int taskIndex, int * msg, int msgLen)
 void TaskScheduler::UpdateMsgByte(int taskIndex, int byte, int msgIndex)
 {
         CANTasks[taskIndex].task.msg[msgIndex] = byte;
+}
+
+//Change transition state
+bool TaskScheduler::ChangeState(int StateTransition, int speedMessageIndex)
+{
+    int start;
+    int end;
+    
+    switch(StateTransition)
+    {
+        case NO_CHANGE: start = StateTransition;
+        end = StateTransition;
+        break;
+
+        case STDBY_TO_FUNCTIONAL_DIAG: start = MCU_STDBY;
+        end = MCU_FUNCTIONAL_DIAG;
+        break;
+
+        case PWR_READY_TO_PWR_DIAG: start = MCU_PWR_READY;
+        end = MCU_PWR_DIAG;
+        break;
+
+        case DRIVE_READY_TO_NORM_OPS: start = MCU_DRIVE_READY;
+        end = MCU_NORM_OPS;
+        break;
+
+        case NORM_OPS_TO_DISCHARGE_DIAG: start = MCU_NORM_OPS;
+        end = MCU_DISCHARGE_DIAG;
+        break;
+
+        case FAULT_CLASSA_TO_STDBY: start = MCU_FAULT_CLASSA;
+        end = MCU_STDBY;
+        break;
+
+        case IGNIT_READY_TO_ADV_DIAG_CLASSA: start = MCU_IGNIT_READY;
+        end = MCU_ADV_DIAG_CLASSA;
+        break;
+
+        case FAULT_CLASSA_TO_ADV_DIAG_CLASSA: start = MCU_FAULT_CLASSA;
+        end = MCU_ADV_DIAG_CLASSA;
+        break;
+
+        case FAULT_CLASSB_TO_PWR_READY: start = MCU_FAULT_CLASSB;
+        end = MCU_PWR_READY;
+        break;
+
+        case NORM_OPS_TO_DRIVE_READY: start = MCU_NORM_OPS;
+        end = MCU_DRIVE_READY;
+        break;
+
+        case PWR_READY_TO_ADV_DIAG_CLASSB: start = MCU_PWR_READY;
+        end = MCU_ADV_DIAG_CLASSB;
+        break;
+
+        case FAULT_CLASSB_TO_ADV_DIAG_CLASSB: start = MCU_FAULT_CLASSB;
+        end = MCU_ADV_DIAG_CLASSB;
+        break;
+
+        case DRIVE_READY_TO_ADV_DIAG_CLASSB: start = MCU_DRIVE_READY;
+        end = MCU_ADV_DIAG_CLASSB;
+        break;
+
+        case FAULT_CLASSB_TO_FAIL_SAFE: start = MCU_FAULT_CLASSB;
+        end = MCU_FAIL_SAFE;
+        break;
+
+        case FAULT_CLASS_B_ADV_DIAG_CLASSA_TO_FAIL_SAFE: start = MCU_ADV_DIAG_CLASSA;
+        end = MCU_FAIL_SAFE;
+        break;
+
+        case PWR_READY_TO_DRIVE_READY: start = MCU_PWR_READY;
+        end = MCU_DRIVE_READY;
+        break;
+
+        case STDBY_TO_ADV_DIAG_CLASSA: start = MCU_STDBY;
+        end = MCU_ADV_DIAG_CLASSA;
+        break;
+
+        case STDBY_TO_IGNIT_READY: start = MCU_STDBY;
+        end = MCU_IGNIT_READY;
+        break;
+
+        case ADV_DIAG_CLASSB_TO_PWR_READY: start = MCU_ADV_DIAG_CLASSB;
+        end = MCU_PWR_READY;
+        break;
+
+        case ADV_DIAG_CLASSA_TO_STDBY: start = MCU_ADV_DIAG_CLASSA;
+        end = MCU_STDBY;
+        break;
+
+        case FAULT_CLASSB_TO_STDBY: start = MCU_FAULT_CLASSB;
+        end = MCU_STDBY;
+        break;
+
+        case IGNIT_READY_TO_STDBY: start = MCU_IGNIT_READY;
+        end = MCU_STDBY;
+        break;
+
+        case PWR_READY_TO_STDBY: start = MCU_PWR_READY;
+        end = MCU_STDBY;
+        break;
+
+        case DRIVE_READY_TO_STDBY: start = MCU_DRIVE_READY;
+        end = MCU_STDBY;
+        break;
+
+        case NORM_OPS_TO_STDBY: start = MCU_NORM_OPS;
+        end = MCU_STDBY;
+        break;
+
+        case NORM_OPS_TO_PWR_READY: start = MCU_NORM_OPS;
+        end = MCU_PWR_READY;
+        break;
+
+        case DRIVE_READY_TO_PWR_READY: start = MCU_DRIVE_READY;
+        end = MCU_PWR_READY;
+        break;
+
+        uint8_t array [CANTasks[speedMessageIndex].task.msgLen];
+
+        for (int i = 0; i < J1939_MSGLEN; i++)
+        {
+            array[i] = CANTasks[speedMessageIndex].task.msg[i];
+        }
+
+        array[6] = StateTransition;
+
+       j1939.Transmit(CANTasks[speedMessageIndex].task.priority, 
+                            CANTasks[speedMessageIndex].task.PGN,
+                            CANTasks[speedMessageIndex].task.srcAddr,
+                            CANTasks[speedMessageIndex].task.destAddr,
+                            &array[speedMessageIndex], 
+                            CANTasks[speedMessageIndex].task.msgLen);
+    }
 }
 
 //// Private Functions
