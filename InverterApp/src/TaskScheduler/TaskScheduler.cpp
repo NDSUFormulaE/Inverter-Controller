@@ -2,6 +2,7 @@
 #include "../ARD1939/CAN_SPEC/StateTransition.h"
 #include "../ARD1939/CAN_SPEC/MotorControlUnitState.h"
 
+
 InitializedCANTask CANTasks[MAX_TASKS];
 ARD1939 j1939;
 
@@ -123,16 +124,22 @@ void TaskScheduler::UpdateMsgByte(int taskIndex, int byte, int msgIndex)
         CANTasks[taskIndex].task.msg[msgIndex] = byte;
 }
 
-//Change transition state
-bool TaskScheduler::ChangeState(int StateTransition, int speedMessageIndex)
+//ChangeState Function is used to transistion through the inverter state machine.
+//stateTransition variable is a State Transition command from CAN Spec 2.3.3.
+//speedMessageIndex is the 6th byte of the Speed Mode in CAN Spec 2.3.1.2. Used to transition state to the speed state (which should be the first state).
+//State commands can be found in StateTransition.h
+//Motor Control Unit State Definitions can be found in MotorControlUnitState.h
+bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
 {
     int start;
     int end;
     
-    switch(StateTransition)
+    extern struct CANVariables InverterState;
+
+    switch(stateTransition)
     {
-        case NO_CHANGE: start = StateTransition;
-        end = StateTransition;
+        case NO_CHANGE: start = stateTransition;
+        end = stateTransition;
         break;
 
         case STDBY_TO_FUNCTIONAL_DIAG: start = MCU_STDBY;
@@ -239,6 +246,11 @@ bool TaskScheduler::ChangeState(int StateTransition, int speedMessageIndex)
         end = MCU_PWR_READY;
         break;
 
+        if(InverterState.MCU_State != start)
+        {
+            return -1;
+        }
+
         uint8_t array [CANTasks[speedMessageIndex].task.msgLen];
 
         for (int i = 0; i < J1939_MSGLEN; i++)
@@ -246,7 +258,7 @@ bool TaskScheduler::ChangeState(int StateTransition, int speedMessageIndex)
             array[i] = CANTasks[speedMessageIndex].task.msg[i];
         }
 
-        array[6] = StateTransition;
+        array[6] = stateTransition;
 
        j1939.Transmit(CANTasks[speedMessageIndex].task.priority, 
                             CANTasks[speedMessageIndex].task.PGN,
