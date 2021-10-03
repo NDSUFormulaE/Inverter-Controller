@@ -16,7 +16,7 @@ void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
 // Managers
 TaskScheduler taskMan;
-gpioHandler gpioMan;
+GPIOHandler gpioMan;
 
 // Imports
 extern struct CANVariables InverterState;

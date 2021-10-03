@@ -3,7 +3,7 @@
 #include <Arduino.h>
 
 
-class gpioHandler
+class GPIOHandler
 {
     public:
         uint16_t GetPedalSpeed();
