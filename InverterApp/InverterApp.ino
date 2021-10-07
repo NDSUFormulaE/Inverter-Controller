@@ -5,6 +5,7 @@
 // CAN library and PD400 definitions
 
 #include "src/ARD1939/CAN_SPEC/PGN.h"
+#include "src/ARD1939/CAN_SPEC/StateTransition.h"
 
 // Task Scheduler
 #include "src/TaskScheduler/TaskScheduler.h"
@@ -21,6 +22,7 @@ uint8_t heartbeat2[] = {8,7,6,5,4,3,2,1};
 
 void setup()
 {
+    Serial.begin(115200);
     int TaskSchedulerInit = taskMan.Init();
     if (TaskSchedulerInit != 0)
     {
