@@ -42,6 +42,7 @@ class TaskScheduler
         void UpdateMsg(int taskIndex, int msg[], int msgLen);
         void UpdateMsgByte(int taskIndex, int byte, int msgIndex);
         void RunLoop();
+        bool ChangeState(int StateTransition, int speedMessageIndex);
     private:
         void SendMessages();
         void RecieveMessages();
