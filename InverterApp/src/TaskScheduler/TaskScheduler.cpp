@@ -130,13 +130,21 @@ void TaskScheduler::UpdateMsgByte(int taskIndex, int byte, int msgIndex)
         CANTasks[taskIndex].task.msg[msgIndex] = byte;
 }
 
-//ChangeState Function is used to transistion through the inverter state machine.
-//stateTransition variable is a State Transition command from CAN Spec 2.3.3.
-//speedMessageIndex is the 6th byte of the Speed Mode in CAN Spec 2.3.1.2. Used to transition state to the speed state (which should be the first state).
-//State commands can be found in StateTransition.h
-//Motor Control Unit State Definitions can be found in MotorControlUnitState.h
 bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
 {
+
+ /**
+    * Transition through the inverter state machine.
+    * State commands can be found in StateTransition.h
+    * Motor Contorl Unit State Definitions can be found in MotorControlUnitState.h
+    *
+    * Parameters:
+    *    stateTransition             (int): State transition command from CAN Spec 2.3.3.
+    *    speedMessageIndex           (int): 6th byte of the speed mode in CAN Spec 2.3.1.2.
+    * Returns:
+    *    False if InverterState.MCU_State != start. True otherwise.
+    **/
+
     int start;
     int end;
     
@@ -243,6 +251,24 @@ bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
                             CANTasks[speedMessageIndex].task.destAddr,
                             &array[0], 
                             J1939_MSGLEN);
+}
+
+void TaskScheduler::UpdateSpeed(uint16_t currentPedalSpeed, int speedMessageIndex)
+{
+    /**
+    * Updates current speed of the car.
+    *
+    * Parameters:
+    *    currentPedalSpeed      (uint16_t): Speed of pedal (RPM).
+    *    speedMessageIndex           (int): 6th byte of the speed mode in CAN Spec 2.3.1.2.
+    * Returns:
+    *    none
+    **/
+    uint16_t newSpeed = 0;
+    newSpeed = (currentPedalSpeed *32.78)+32000;
+
+    UpdateMsgByte(speedMessageIndex, newSpeed % 0xFF ,2);
+    UpdateMsgByte(speedMessageIndex, newSpeed >> 8, 3);
 }
 
 //// Private Functions
