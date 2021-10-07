@@ -7,9 +7,10 @@ ARD1939 j1939;
 bool TaskScheduler::Init()
 {
     // Initialize the J1939 protocol including CAN settings
-    if (j1939.Init(SYSTEM_TIME) != 0)
+    int j1939_init = j1939.Init(SYSTEM_TIME);
+    if (j1939_init != 0)
     {
-        return false;
+        return j1939_init;
     }    
     // Set the preferred address and address range
     j1939.SetPreferredAddress(SA_PREFERRED);

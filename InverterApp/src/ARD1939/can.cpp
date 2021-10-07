@@ -30,7 +30,7 @@ uint8_t canInit(void)
   nWritePointer = 0;
   
   // Initialize the CAN controller
-  if(CAN0.begin(CAN_1000KBPS) == 0)
+  if(CAN0.begin(CAN_500KBPS) == 0)
     return 0;
   else return 1;
 
