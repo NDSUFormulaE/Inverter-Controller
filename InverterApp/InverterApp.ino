@@ -4,6 +4,7 @@
 
 //// CAN library and PD400 definitions
 #include "src/ARD1939/CAN_SPEC/PGN.h"
+#include "src/ARD1939/CAN_SPEC/StateTransition.h"
 
 //// Subsystem imports
 #include "src/TaskScheduler/TaskScheduler.h"
@@ -30,6 +31,7 @@ uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0
 //// Functions
 void setup()
 {
+    Serial.begin(115200);
     if ((taskMan.Init() == false) || (gpioMan.Init() == false))
     {
         delay(500);

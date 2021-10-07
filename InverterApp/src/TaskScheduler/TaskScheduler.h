@@ -43,6 +43,7 @@ class TaskScheduler
         void UpdateMsgByte(int taskIndex, int byte, int msgIndex);
         void RunLoop();
         uint8_t GetSourceAddress();
+        bool ChangeState(int StateTransition, int speedMessageIndex);
     private:
         void SendMessages();
         void RecieveMessages();
