@@ -138,120 +138,91 @@ bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
 
     switch(stateTransition)
     {
-        case NO_CHANGE: start = stateTransition;
-        end = stateTransition;
-        break;
-
         case STDBY_TO_FUNCTIONAL_DIAG: start = MCU_STDBY;
-        end = MCU_FUNCTIONAL_DIAG;
         break;
 
         case PWR_READY_TO_PWR_DIAG: start = MCU_PWR_READY;
-        end = MCU_PWR_DIAG;
         break;
 
         case DRIVE_READY_TO_NORM_OPS: start = MCU_DRIVE_READY;
-        end = MCU_NORM_OPS;
         break;
 
         case NORM_OPS_TO_DISCHARGE_DIAG: start = MCU_NORM_OPS;
-        end = MCU_DISCHARGE_DIAG;
         break;
 
         case FAULT_CLASSA_TO_STDBY: start = MCU_FAULT_CLASSA;
-        end = MCU_STDBY;
         break;
 
         case IGNIT_READY_TO_ADV_DIAG_CLASSA: start = MCU_IGNIT_READY;
-        end = MCU_ADV_DIAG_CLASSA;
         break;
 
         case FAULT_CLASSA_TO_ADV_DIAG_CLASSA: start = MCU_FAULT_CLASSA;
-        end = MCU_ADV_DIAG_CLASSA;
         break;
 
         case FAULT_CLASSB_TO_PWR_READY: start = MCU_FAULT_CLASSB;
-        end = MCU_PWR_READY;
         break;
 
         case NORM_OPS_TO_DRIVE_READY: start = MCU_NORM_OPS;
-        end = MCU_DRIVE_READY;
         break;
 
         case PWR_READY_TO_ADV_DIAG_CLASSB: start = MCU_PWR_READY;
-        end = MCU_ADV_DIAG_CLASSB;
         break;
 
         case FAULT_CLASSB_TO_ADV_DIAG_CLASSB: start = MCU_FAULT_CLASSB;
-        end = MCU_ADV_DIAG_CLASSB;
         break;
 
         case DRIVE_READY_TO_ADV_DIAG_CLASSB: start = MCU_DRIVE_READY;
-        end = MCU_ADV_DIAG_CLASSB;
         break;
 
         case FAULT_CLASSB_TO_FAIL_SAFE: start = MCU_FAULT_CLASSB;
-        end = MCU_FAIL_SAFE;
         break;
 
         case FAULT_CLASS_B_ADV_DIAG_CLASSA_TO_FAIL_SAFE: start = MCU_ADV_DIAG_CLASSA;
-        end = MCU_FAIL_SAFE;
         break;
 
         case PWR_READY_TO_DRIVE_READY: start = MCU_PWR_READY;
-        end = MCU_DRIVE_READY;
         break;
 
         case STDBY_TO_ADV_DIAG_CLASSA: start = MCU_STDBY;
-        end = MCU_ADV_DIAG_CLASSA;
         break;
 
         case STDBY_TO_IGNIT_READY: start = MCU_STDBY;
-        end = MCU_IGNIT_READY;
         break;
 
         case ADV_DIAG_CLASSB_TO_PWR_READY: start = MCU_ADV_DIAG_CLASSB;
-        end = MCU_PWR_READY;
         break;
 
         case ADV_DIAG_CLASSA_TO_STDBY: start = MCU_ADV_DIAG_CLASSA;
-        end = MCU_STDBY;
         break;
 
         case FAULT_CLASSB_TO_STDBY: start = MCU_FAULT_CLASSB;
-        end = MCU_STDBY;
         break;
 
         case IGNIT_READY_TO_STDBY: start = MCU_IGNIT_READY;
-        end = MCU_STDBY;
         break;
 
         case PWR_READY_TO_STDBY: start = MCU_PWR_READY;
-        end = MCU_STDBY;
         break;
 
         case DRIVE_READY_TO_STDBY: start = MCU_DRIVE_READY;
-        end = MCU_STDBY;
         break;
 
         case NORM_OPS_TO_STDBY: start = MCU_NORM_OPS;
-        end = MCU_STDBY;
         break;
 
         case NORM_OPS_TO_PWR_READY: start = MCU_NORM_OPS;
-        end = MCU_PWR_READY;
         break;
 
         case DRIVE_READY_TO_PWR_READY: start = MCU_DRIVE_READY;
-        end = MCU_PWR_READY;
         break;
+        }
 
         if(InverterState.MCU_State != start)
         {
             return -1;
         }
 
-        uint8_t array [CANTasks[speedMessageIndex].task.msgLen];
+        uint8_t array[J1939_MSGLEN];
 
         for (int i = 0; i < J1939_MSGLEN; i++)
         {
@@ -264,9 +235,8 @@ bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
                             CANTasks[speedMessageIndex].task.PGN,
                             CANTasks[speedMessageIndex].task.srcAddr,
                             CANTasks[speedMessageIndex].task.destAddr,
-                            &array[speedMessageIndex], 
-                            CANTasks[speedMessageIndex].task.msgLen);
-    }
+                            &array[0], 
+                            J1939_MSGLEN);
 }
 
 //// Private Functions
