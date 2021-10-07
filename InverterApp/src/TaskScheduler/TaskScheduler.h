@@ -34,13 +34,15 @@ struct MsgReturn
 class TaskScheduler
 {
     public:
-        int Init();
+        bool Init();
         int AddCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8_t destAddr, int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN]);
         void RemoveCANTask(int taskIndex);
         MsgReturn GetMsg(int taskIndex);
         void UpdateMsg(int taskIndex, int msg[], int msgLen);
         void UpdateMsgByte(int taskIndex, int byte, int msgIndex);
         void RunLoop();
+        uint8_t GetSourceAddress();
+        bool ChangeState(int StateTransition, int speedMessageIndex);
     private:
         void SendMessages();
         void RecieveMessages();
