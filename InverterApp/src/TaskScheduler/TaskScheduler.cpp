@@ -264,6 +264,12 @@ void TaskScheduler::UpdateSpeed(uint16_t currentPedalSpeed, int speedMessageInde
     * Returns:
     *    none
     **/
+
+   if(currentPedalSpeed >1023)
+   {
+       currentPedalSpeed = 1023;
+   }
+
     uint16_t newSpeed = 0;
     newSpeed = (currentPedalSpeed *32.78)+32000;
 
