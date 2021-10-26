@@ -9,6 +9,14 @@ ARD1939 j1939;
 //// Main Tasks
 bool TaskScheduler::Init()
 {
+    /**
+    * Initialize the j1939 subsystem
+    *
+    * Parameters:
+    *    none
+    * Returns:
+    *    none
+    **/
     // Initialize the J1939 protocol including CAN settings
     int j1939_init = j1939.Init(SYSTEM_TIME);
     if (j1939_init != 0)
@@ -39,6 +47,14 @@ uint8_t TaskScheduler::GetSourceAddress()
 
 void TaskScheduler::RunLoop()
 {
+    /**
+    * Periodic Tasks for all subsystems
+    *
+    * Parameters:
+    *     none
+    * Returns:
+    *     none
+    **/
     TaskScheduler::SendMessages();
     // Caused issues with bytes to send over CAN. Test with the Due.
     TaskScheduler::RecieveMessages();
@@ -46,6 +62,14 @@ void TaskScheduler::RunLoop()
 
 void TaskScheduler::SendMessages()
 {
+    /**
+    * Iterates over the entire CANTasks array and sends any messages which have been initialized.
+    *
+    * Parameters:
+    *     none
+    * Returns:
+    *     none
+    **/
     long time;
     for (int i = 0; i < MAX_TASKS; i++)
     {
@@ -65,6 +89,15 @@ void TaskScheduler::SendMessages()
 
 void TaskScheduler::RecieveMessages()
 {
+    /**
+    * Reads messages from the CAN bus and interprets them.
+    * Saves their values in InverterState struct. 
+    *   
+    * Parameters:
+    *     none
+    * Returns:
+    *     none
+    **/
     // J1939 Variables
     uint8_t MsgId;
     uint8_t DestAddr;
@@ -82,9 +115,22 @@ void TaskScheduler::RecieveMessages()
     }
 }
 
-//// Add/Remove Tasks
 int TaskScheduler::AddCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8_t destAddr, int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN])
 {
+    /**
+    * Configure a new CANTask in the array.
+    *
+    * Parameters:
+    *     priority   (uint8_t): Priority of the message to be sent
+    *     PGN           (long): Message PGN
+    *     srcAddr    (uint8_t): Address of the device sending the message
+    *     destAddr   (uint8_t): Address of the device recieving the message
+    *     msgLen         (int): Length of the message 
+    *     interval     (ulong): Number of milliseconds between sending the message
+    *     msg      (uint8_t[]): Message to be sent
+    * Returns:
+    *     firstFree      (int): Index of the newly added CANTask
+    **/
     int firstFree = FirstFreeInArray();
     if (firstFree != -1)
     {
@@ -106,28 +152,63 @@ int TaskScheduler::AddCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8
 
 void RemoveCANTask(int taskIndex)
 {
+    /**
+    * De-initializes a CANTask in the array.
+    * 
+    * Parameters:
+    *     taskIndex   (int): index of the task in CANTasks
+    * Returns:
+    *     none
+    **/
     CANTasks[taskIndex].initialized = false;
     CANTasks[taskIndex].lastRunTime = 0;
 }
 
-//// Message Manipulation
 MsgReturn TaskScheduler::GetMsg(int taskIndex)
 {
+    /**
+    * Gets the msg of the specified task.
+    *
+    * Parameters:
+    *     taskIndex  (int): index of the task in CANTasks
+    * Returns:
+    *     toReturn (struct MsgReturn): returns object with .length and .message properties.
+    **/
     struct MsgReturn toReturn = {CANTasks[taskIndex].task.msgLen, &CANTasks[taskIndex].task.msg[0]};
     return toReturn;
 }
 
 void TaskScheduler::UpdateMsg(int taskIndex, int * msg, int msgLen)
 {
+    /**
+    * Updates a specified message in the CANTasks array.
+    * 
+    * Parameters:
+    *     taskIndex     (int): index of the task in CANTasks
+    *     msg         (int *): pointer to the msg array
+    *     msgLen        (int): length of msg 
+    * Returns:
+    *     none
+    **/
     for (int i = 0; i < msgLen; i++)
     {
         CANTasks[taskIndex].task.msg[i] = msg[i];
     }
 }
 
-void TaskScheduler::UpdateMsgByte(int taskIndex, int byte, int msgIndex)
+void TaskScheduler::UpdateMsgByte(int taskIndex, int byte, int indexOfByte)
 {
-        CANTasks[taskIndex].task.msg[msgIndex] = byte;
+    /**
+    * Updates a byte in a specified message in the CANTasks array.
+    * 
+    * Parameters:
+    *     taskIndex   (int): index of the task in CANTasks
+    *     byte        (int): data to be stored
+    *     indexOfByte (int): index of the message byte 
+    * Returns:
+    *     none
+    **/
+        CANTasks[taskIndex].task.msg[indexOfByte] = byte;
 }
 
 bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
@@ -280,6 +361,14 @@ void TaskScheduler::UpdateSpeed(uint16_t currentPedalSpeed, int speedMessageInde
 //// Private Functions
 int TaskScheduler::FirstFreeInArray()
 {
+    /**
+    * Iterates over the CANTasks array until it finds the first open spot in the array.
+    * 
+    * Parameters:
+    *     none
+    * Returns:
+    *     i (int): index of the first free object in array
+    **/
     for (int i = 0; i < MAX_TASKS; i++)
     {
         if (CANTasks[i].initialized == false)

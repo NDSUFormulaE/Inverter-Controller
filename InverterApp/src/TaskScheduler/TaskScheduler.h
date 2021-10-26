@@ -7,7 +7,6 @@
 // "#defines"
 enum {MAX_TASKS = 20};
 
-// Task Structure Def
 struct CANTask
 {
     uint8_t priority;
