@@ -43,6 +43,7 @@ class TaskScheduler
         void RunLoop();
         uint8_t GetSourceAddress();
         bool ChangeState(int StateTransition, int speedMessageIndex);
+        void UpdateSpeed(uint16_t CurrentPedalSpeed, int speedMessageIndex);
     private:
         void SendMessages();
         void RecieveMessages();
