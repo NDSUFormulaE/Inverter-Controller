@@ -42,8 +42,13 @@ void setup()
 
 void loop()
 {
-    CurrentPedalSpeed = gpioMan.GetPedalSpeed();
-    taskMan.UpdateMsgByte(SpeedCANMsgIndex, CurrentPedalSpeed % 0xFF ,2);
-    taskMan.UpdateMsgByte(SpeedCANMsgIndex, CurrentPedalSpeed >> 8, 3);
+    int tempSpeed = analogRead(2);
+    //CurrentPedalSpeed = gpioMan.GetPedalSpeed();
+    
+    //taskMan.UpdateMsgByte(SpeedCANMsgIndex, CurrentPedalSpeed % 0xFF ,2);
+    //taskMan.UpdateMsgByte(SpeedCANMsgIndex, CurrentPedalSpeed >> 8, 3);
+    tempSpeed = map(tempSpeed, 0, 1023, 0, 200);
+    taskMan.UpdateSpeed(tempSpeed, SpeedCANMsgIndex);
+    Serial.println(tempSpeed);
     taskMan.RunLoop();
 }

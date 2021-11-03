@@ -334,7 +334,7 @@ bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
                             J1939_MSGLEN);
 }
 
-void TaskScheduler::UpdateSpeed(uint16_t currentPedalSpeed, int speedMessageIndex)
+void TaskScheduler::UpdateSpeed(int currentPedalSpeed, int speedMessageIndex)
 {
     /**
     * Updates current speed of the car.
@@ -352,7 +352,7 @@ void TaskScheduler::UpdateSpeed(uint16_t currentPedalSpeed, int speedMessageInde
    }
 
     uint16_t newSpeed = 0;
-    newSpeed = (currentPedalSpeed *32.78)+32000;
+    newSpeed = (currentPedalSpeed *.34100684)+32000;
 
     UpdateMsgByte(speedMessageIndex, newSpeed % 0xFF ,2);
     UpdateMsgByte(speedMessageIndex, newSpeed >> 8, 3);
