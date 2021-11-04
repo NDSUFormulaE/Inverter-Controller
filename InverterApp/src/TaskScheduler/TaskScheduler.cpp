@@ -4,6 +4,7 @@
 
 
 InitializedCANTask CANTasks[MAX_TASKS];
+FaultEntry FaultTable[MAX_FAULTS];
 ARD1939 j1939;
 
 //// Main Tasks
@@ -37,6 +38,13 @@ bool TaskScheduler::Init()
                 NAME_VEHICLE_SYSTEM_INSTANCE,
                 NAME_INDUSTRY_GROUP,
                 NAME_ARBITRARY_ADDRESS_CAPABLE);  
+
+    uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x1F};
+    int SpeedCANMsgIndex = TaskScheduler::AddCANTask(0x06, COMMAND2_SPEED, TaskScheduler::GetSourceAddress(), 0xA2, 8, 15, DefaultSpeedArray);
+    if (SpeedCANMsgIndex != INVERTER_CMD_MESSAGE_INDEX)
+    {
+        return false;
+    }
     return true;
 }
 
@@ -107,8 +115,22 @@ void TaskScheduler::RecieveMessages()
     int MsgLen;
     long PGN;
     uint8_t Msg[J1939_MSGLEN];
+    char sString[80];
 
     J1939Status = j1939.Operate(&MsgId, &PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
+    if(MsgLen != 0 ){
+        sprintf(sString, "PGN: 0x%X Src: 0x%X Dest: 0x%X Len: %i ", (int)PGN, SrcAddr, DestAddr, MsgLen);
+        Serial.print(sString);
+        Serial.print("Data: ");
+        for(int nIndex = 0; nIndex < MsgLen; nIndex++)
+        {          
+          sprintf(sString, "0x%X ", Msg[nIndex]);
+          Serial.print(sString);
+          
+        }// end for
+        Serial.print("\n\r");
+        MsgId = J1939_MSG_NONE;
+      }
     if (J1939Status == NORMALDATATRAFFIC)
     {
         j1939.CANInterpret(&PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
@@ -131,7 +153,7 @@ int TaskScheduler::AddCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8
     * Returns:
     *     firstFree      (int): Index of the newly added CANTask
     **/
-    int firstFree = FirstFreeInArray();
+    int firstFree = FirstFreeInCANTasks();
     if (firstFree != -1)
     {
         CANTasks[firstFree].task.priority = priority;
@@ -359,7 +381,7 @@ void TaskScheduler::UpdateSpeed(uint16_t currentPedalSpeed, int speedMessageInde
 }
 
 //// Private Functions
-int TaskScheduler::FirstFreeInArray()
+int TaskScheduler::FirstFreeInCANTasks()
 {
     /**
     * Iterates over the CANTasks array until it finds the first open spot in the array.
@@ -377,4 +399,118 @@ int TaskScheduler::FirstFreeInArray()
         }
     }
     return -1;
+}
+
+int TaskScheduler::FirstFreeInFaultArray()
+{
+    /**
+    * Iterates over the FaultTable array until it finds the first open spot in the array.
+    * 
+    * Parameters:
+    *     none
+    * Returns:
+    *     i (int): index of the first free object in array, -1 if full.
+    **/
+    for (int i = 0; i < MAX_FAULTS; i++)
+    {
+        if (FaultTable[i].active == false)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool TaskScheduler::isFaultTableClear()
+{
+    /**
+    * Iterates over the FaultTable array and checks if all faults are inactive.
+    * 
+    * Parameters:
+    *     none
+    * Returns:
+    *     (bool): true if no faults in array, else false.
+    **/
+    for (FaultEntry fault : FaultTable)
+    {
+        if (fault.active)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+int TaskScheduler::isFaultInArray(uint32_t SPN, uint8_t FMI)
+{
+    /**
+    * Iterates over the FaultTable array and checks if active fault
+    * matching SPN and FMI in the is in the array
+    * 
+    * Parameters:
+    *     SPN       (uint16_t): Suspect Parameter Number of Fault
+    *     FMI        (uint8_t): Failure mode identifier
+    * Returns:
+    *     index          (int): Index of fault if exists and is active.
+    *                           else -1.
+    **/
+    for (int i = 0; i < MAX_FAULTS; i++)
+    {
+        FaultEntry fault = FaultTable[i];
+        if(fault.active && (fault.SPN == SPN && fault.FMI == FMI))
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int TaskScheduler::AddNewFault(uint32_t SPN, uint8_t FMI, uint8_t Occurance, uint8_t CM)
+{
+    /**
+    * Configure a new FaultEntry in array.
+    *
+    * Parameters:
+    *     SPN       (uint16_t): Suspect Parameter Number of Fault
+    *     FMI        (uint8_t): Failure mode identifier
+    *     OC         (uint8_t): Number of fault occurances 
+    *     CM         (uint8_t): SPN conversion method
+    * Returns:
+    *     firstFree      (int): Index of the newly added FaultEntry
+    **/
+    int firstFree = FirstFreeInFaultArray();
+    if (firstFree != -1)
+    {
+        FaultTable[firstFree].SPN = SPN;
+        FaultTable[firstFree].FMI = FMI;
+        FaultTable[firstFree].OC = Occurance;
+        FaultTable[firstFree].CM = CM;
+        FaultTable[firstFree].active = true;
+    }
+    return firstFree;
+}
+
+int TaskScheduler::UpdateAddFault(uint32_t SPN, uint8_t FMI, uint8_t Occurance, uint8_t CM)
+{
+    /**
+    * Configure a new FaultEntry in array, if it already exists update the occurance.
+    *
+    * Parameters:
+    *     SPN       (uint16_t): Suspect Parameter Number of Fault
+    *     FMI        (uint8_t): Failure mode identifier
+    *     OC         (uint8_t): Number of fault occurances 
+    *     CM         (uint8_t): SPN conversion method
+    * Returns:
+    *     firstFree      (int): Index of the newly added FaultEntry
+    **/
+    int faultIndex = isFaultInArray(SPN, FMI);
+    if(faultIndex > -1)
+    {
+        FaultTable[faultIndex].OC = Occurance;
+    }
+    else
+    {
+        AddNewFault(SPN, FMI, Occurance, CM);
+    }
+    return faultIndex;
 }

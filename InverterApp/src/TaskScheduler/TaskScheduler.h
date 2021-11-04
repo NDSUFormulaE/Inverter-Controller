@@ -3,9 +3,11 @@
 #include <Arduino.h>
 
 #include "../ARD1939/ARD1939.h"
+#include "../ARD1939/CAN_SPEC/PGN.h"
 
-// "#defines"
-enum {MAX_TASKS = 20};
+enum {MAX_TASKS = 5};
+enum {MAX_FAULTS = 20};
+#define INVERTER_CMD_MESSAGE_INDEX 0
 
 struct CANTask
 {
@@ -31,6 +33,15 @@ struct MsgReturn
     uint8_t * message[J1939_MSGLEN];
 };
 
+struct FaultEntry
+{
+    uint32_t SPN;
+    uint8_t FMI;
+    uint8_t OC;
+    uint8_t CM;
+    boolean active = true;
+};
+
 class TaskScheduler
 {
     public:
@@ -44,10 +55,16 @@ class TaskScheduler
         uint8_t GetSourceAddress();
         bool ChangeState(int StateTransition, int speedMessageIndex);
         void UpdateSpeed(uint16_t CurrentPedalSpeed, int speedMessageIndex);
+        int UpdateAddFault(uint32_t SPN, uint8_t FMI, uint8_t Occurance, uint8_t CM);
     private:
         void SendMessages();
         void RecieveMessages();
-        int FirstFreeInArray();
+        int FirstFreeInCANTasks();
+        bool isFaultTableClear();
+        int isFaultInArray(uint32_t SPN, uint8_t FMI);
+        int FirstFreeInFaultArray();
+        int AddNewFault(uint32_t SPN, uint8_t FMI, uint8_t Occurance, uint8_t CM);
         InitializedCANTask CANTasks[MAX_TASKS];
+        FaultEntry FaultTable[MAX_FAULTS];
         ARD1939 j1939;
 };
