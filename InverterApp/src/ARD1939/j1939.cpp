@@ -184,7 +184,15 @@ extern uint8_t canInit(void);
 extern uint8_t canCheckError(void);
 extern uint8_t canTransmit(long, unsigned char*, int);
 extern uint8_t canReceive(long*, unsigned char*, int*);
+
 struct CANVariables InverterState = {};
+struct FaultEntry FaultTable[MAX_FAULTS];
+bool TP_BAM_Recieved = false;
+uint16_t TP_Num_Bytes = 0;
+uint8_t TP_Num_Packets = -1;
+uint8_t TPLatestPacketRecieved = -1;
+uint16_t TP_PGN = 0;
+
 uint8_t ARD1939::Init(int v80)
 {
   int v65;
@@ -1324,14 +1332,141 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       InverterState.Flash_Red_Stop_Lamp_Status = (CAN_Message[1] >> 2) % 4;
       InverterState.Flash_Multi_Indicator_Lamp_Status = CAN_Message[1] % 4;
 
-      InverterState.DM1_SPN = CAN_Message[2] + (CAN_Message[3] << 8);
+      uint32_t SPN = CAN_Message[2] + (CAN_Message[3] << 8) + (CAN_Message[4] % 0xFFF << 16);
+      uint8_t FMI = CAN_Message[4] >> 3;
+      uint8_t Occ = CAN_Message[5] >> 1;
+      UpdateAddFault(SPN, FMI, Occ);
+      break;
+    }
 
-      InverterState.DM1_FMI = CAN_Message[4] % 8;
+    case TP_BAM:
+    {
+      TP_BAM_Recieved = true;
 
-      InverterState.Occurrence_Count = CAN_Message[5] % 2;
+      
+
+      break;
+    }
+
+    case TP_DATA:
+    {
+
       break;
     }
   }
+}
+
+int ARD1939::FirstFreeInFaultArray()
+{
+    /**
+    * Iterates over the FaultTable array until it finds the first open spot in the array.
+    * 
+    * Parameters:
+    *     none
+    * Returns:
+    *     i (int): index of the first free object in array, -1 if full.
+    **/
+    for (int i = 0; i < MAX_FAULTS; i++)
+    {
+        if (FaultTable[i].active == false)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool ARD1939::isFaultTableClear()
+{
+    /**
+    * Iterates over the FaultTable array and checks if all faults are inactive.
+    * 
+    * Parameters:
+    *     none
+    * Returns:
+    *     (bool): true if no faults in array, else false.
+    **/
+    for (FaultEntry fault : FaultTable)
+    {
+        if (fault.active)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+int ARD1939::isFaultInArray(uint32_t SPN, uint8_t FMI)
+{
+    /**
+    * Iterates over the FaultTable array and checks if active fault
+    * matching SPN and FMI in the is in the array
+    * 
+    * Parameters:
+    *     SPN       (uint16_t): Suspect Parameter Number of Fault
+    *     FMI        (uint8_t): Failure mode identifier
+    * Returns:
+    *     index          (int): Index of fault if exists and is active.
+    *                           else -1.
+    **/
+    for (int i = 0; i < MAX_FAULTS; i++)
+    {
+        FaultEntry fault = FaultTable[i];
+        if(fault.active && (fault.SPN == SPN && fault.FMI == FMI))
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int ARD1939::AddNewFault(uint32_t SPN, uint8_t FMI, uint8_t Occurance)
+{
+    /**
+    * Configure a new FaultEntry in array.
+    *
+    * Parameters:
+    *     SPN       (uint16_t): Suspect Parameter Number of Fault
+    *     FMI        (uint8_t): Failure mode identifier
+    *     OC         (uint8_t): Number of fault occurances 
+    *     CM         (uint8_t): SPN conversion method
+    * Returns:
+    *     firstFree      (int): Index of the newly added FaultEntry
+    **/
+    int firstFree = FirstFreeInFaultArray();
+    if (firstFree != -1)
+    {
+        FaultTable[firstFree].SPN = SPN;
+        FaultTable[firstFree].FMI = FMI;
+        FaultTable[firstFree].OC = Occurance;
+        FaultTable[firstFree].active = true;
+    }
+    return firstFree;
+}
+
+int ARD1939::UpdateAddFault(uint32_t SPN, uint8_t FMI, uint8_t Occurance)
+{
+    /**
+    * Configure a new FaultEntry in array, if it already exists update the occurance.
+    *
+    * Parameters:
+    *     SPN       (uint16_t): Suspect Parameter Number of Fault
+    *     FMI        (uint8_t): Failure mode identifier
+    *     OC         (uint8_t): Number of fault occurances 
+    *     CM         (uint8_t): SPN conversion method
+    * Returns:
+    *     firstFree      (int): Index of the newly added FaultEntry
+    **/
+    int faultIndex = isFaultInArray(SPN, FMI);
+    if(faultIndex > -1)
+    {
+        FaultTable[faultIndex].OC = Occurance;
+    }
+    else
+    {
+        AddNewFault(SPN, FMI, Occurance);
+    }
+    return faultIndex;
 }
 
 bool ARD1939::CheckValidState(void){

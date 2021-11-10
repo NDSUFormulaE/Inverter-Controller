@@ -94,6 +94,16 @@ struct v35
   bool v37;
 };
 
+struct FaultEntry
+{
+    uint32_t SPN;
+    uint8_t FMI;
+    uint8_t OC;
+    boolean active = true;
+};
+
+enum {MAX_FAULTS = 20};
+
 class ARD1939
 {
   public: 
@@ -115,6 +125,7 @@ class ARD1939
     void DeleteMessageFilter(long lPGN);
     void CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_MessageLen, uint8_t* CAN_DestAddr, uint8_t* CAN_SrcAddr, uint8_t* CAN_Priority);
     bool CheckValidState(void);
+    int UpdateAddFault(uint32_t SPN, uint8_t FMI, uint8_t Occurance);
   private:
     uint8_t f01(uint8_t, uint8_t*);
     bool f02(void);
@@ -125,6 +136,11 @@ class ARD1939
     bool f07(long*, uint8_t*);
     bool f08(long);
     bool f09(long);
+    bool isFaultTableClear();
+    int isFaultInArray(uint32_t SPN, uint8_t FMI);
+    int FirstFreeInFaultArray();
+    int AddNewFault(uint32_t SPN, uint8_t FMI, uint8_t Occurance);
+    FaultEntry FaultTable[MAX_FAULTS];
 
 #if TRANSPORT_PROTOCOL == 1
     uint8_t f10(uint8_t, long, uint8_t, uint8_t, uint8_t*, int);
