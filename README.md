@@ -1,6 +1,8 @@
 # Inverter-Controller
 This repository is for the NDSU Formula Electric Inverter Controller and this system is designed to run on an Arduino Uno.
 
+[![Build Status](https://cloud.drone.io/api/badges/NDSUFormulaE/Inverter-Controller/status.svg)](https://cloud.drone.io/NDSUFormulaE/Inverter-Controller)
+
 ## Repo Structure
 All important code is found inside the ``InverterApp``.
 - ``InverterApp``: Top-Level Dir
