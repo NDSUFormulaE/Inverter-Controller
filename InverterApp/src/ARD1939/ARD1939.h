@@ -103,6 +103,7 @@ struct FaultEntry
 };
 
 enum {MAX_FAULTS = 20};
+enum {TP_BUFFER_LENGTH = 1785};
 
 class ARD1939
 {
@@ -140,7 +141,10 @@ class ARD1939
     int isFaultInArray(uint32_t SPN, uint8_t FMI);
     int FirstFreeInFaultArray();
     int AddNewFault(uint32_t SPN, uint8_t FMI, uint8_t Occurance);
+    bool TPMessageRecived(uint8_t num_packets);
+    void DecodeTransportProtocol();
     FaultEntry FaultTable[MAX_FAULTS];
+    
 
 #if TRANSPORT_PROTOCOL == 1
     uint8_t f10(uint8_t, long, uint8_t, uint8_t, uint8_t*, int);

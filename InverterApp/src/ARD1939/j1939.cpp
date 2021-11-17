@@ -188,9 +188,11 @@ extern uint8_t canReceive(long*, unsigned char*, int*);
 struct CANVariables InverterState = {};
 struct FaultEntry FaultTable[MAX_FAULTS];
 bool TP_BAM_Recieved = false;
+bool TP_Mesage_Fully_Recieved = false;
+uint8_t TP_Buffer[TP_BUFFER_LENGTH];
+uint8_t TP_Message_Recieved_Counter[255];
 uint16_t TP_Num_Bytes = 0;
-uint8_t TP_Num_Packets = -1;
-uint8_t TPLatestPacketRecieved = -1;
+uint8_t TP_Num_Packets = 0;
 uint16_t TP_PGN = 0;
 
 uint8_t ARD1939::Init(int v80)
@@ -1332,7 +1334,7 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       InverterState.Flash_Red_Stop_Lamp_Status = (CAN_Message[1] >> 2) % 4;
       InverterState.Flash_Multi_Indicator_Lamp_Status = CAN_Message[1] % 4;
 
-      uint32_t SPN = CAN_Message[2] + (CAN_Message[3] << 8) + (CAN_Message[4] % 0xFFF << 16);
+      uint16_t SPN = CAN_Message[2] + (CAN_Message[3] << 8);
       uint8_t FMI = CAN_Message[4] >> 3;
       uint8_t Occ = CAN_Message[5] >> 1;
       UpdateAddFault(SPN, FMI, Occ);
@@ -1342,18 +1344,77 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
     case TP_BAM:
     {
       TP_BAM_Recieved = true;
-
-      
-
+      TP_Num_Bytes = CAN_Message[1] + (CAN_Message[2] << 8);
+      TP_Num_Packets = CAN_Message[3];
+      TP_PGN = CAN_Message[5] + (CAN_Message[6] << 8);
+      for(int i = 0; i < TP_Num_Packets; i++)
+      {
+        if(TP_Message_Recieved_Counter[i] == 1)
+        {
+          TP_Message_Recieved_Counter[i] = 0;
+        }
+      }
+      for(int i = 0; i < TP_Num_Bytes; i++){
+        if(TP_Buffer[i] != 0xFF){
+          TP_Buffer[i] = 0xFF;
+        }
+      }
       break;
     }
 
     case TP_DATA:
     {
-
+      uint8_t message_index = CAN_Message[0];
+      uint16_t message_offset = 7 * message_index;
+      TP_Message_Recieved_Counter[message_index -1] = 1;
+      for(int i = 0; i < 7; i++)
+      {
+        TP_Buffer[message_offset + i] = CAN_Message[i+1];
+      }
+      if(TPMessageRecived(TP_Num_Packets))
+      {
+        TP_Mesage_Fully_Recieved = true;
+        DecodeTransportProtocol();
+      }
       break;
     }
   }
+}
+
+bool ARD1939::TPMessageRecived(uint8_t num_packets)
+{
+  for (int i = 0; i < num_packets; i++)
+  {
+    if (TP_Message_Recieved_Counter[i] != 1)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+void ARD1939::DecodeTransportProtocol()
+{
+  if(TP_PGN == DM1){
+    InverterState.Protect_Lamp_Status = TP_Buffer[0] >> 6;
+    InverterState.Amber_Warning_Lamp_Status = (TP_Buffer[0] >> 4) % 4;
+    InverterState.Red_Stop_Lamp_Status = (TP_Buffer[0] >> 2) % 4;
+    InverterState.Multi_Indicator_Lamp_Status = TP_Buffer[0] % 4;
+
+    InverterState.Flash_Protect_Lamp_Status = TP_Buffer[1] >> 6;
+    InverterState.Flash_Amber_Warning_Lamp_Status = (TP_Buffer[1] >> 4) % 4;
+    InverterState.Flash_Red_Stop_Lamp_Status = (TP_Buffer[1] >> 2) % 4;
+    InverterState.Flash_Multi_Indicator_Lamp_Status = TP_Buffer[1] % 4;
+
+    int Num_DM1s = (TP_Num_Bytes - 2)/4;
+    for(int i = 0; i < Num_DM1s; i++)
+    {
+      uint16_t SPN = TP_Buffer[(4*i) + 2] + (TP_Buffer[(4*i) + 3] << 8);
+      uint8_t FMI = TP_Buffer[(4*i) + 4] >> 3;
+      uint8_t Occ = TP_Buffer[(4*i) + 5] >> 1;
+      UpdateAddFault(SPN, FMI, Occ);
+    }
+  } 
 }
 
 int ARD1939::FirstFreeInFaultArray()
