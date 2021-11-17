@@ -36,6 +36,9 @@ void setup()
 
 void loop()
 {
-    taskMan.UpdateSpeed(gpioMan.GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
+    int tempSpeed = analogRead(2);
+    tempSpeed = map(tempSpeed, 0, 1023, 32000, 32200);
+    taskMan.UpdateSpeed(tempSpeed, INVERTER_CMD_MESSAGE_INDEX);
+    Serial.println(InverterState.Abs_Machine_Speed);
     taskMan.RunLoop();
 }
