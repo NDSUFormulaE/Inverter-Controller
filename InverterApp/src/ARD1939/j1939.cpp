@@ -5,6 +5,7 @@
 #include "CAN_SPEC/MotorControlUnitState.h"
 #include "CAN_SPEC/PGN.h"
 #include "ARD1939.h"
+#include "Arduino.h"
 
 #define d49                             10
 
@@ -188,7 +189,6 @@ extern uint8_t canReceive(long*, unsigned char*, int*);
 struct CANVariables InverterState = {};
 struct FaultEntry FaultTable[MAX_FAULTS];
 bool TP_BAM_Recieved = false;
-bool TP_Mesage_Fully_Recieved = false;
 uint8_t TP_Buffer[TP_BUFFER_LENGTH];
 uint8_t TP_Message_Recieved_Counter[255];
 uint16_t TP_Num_Bytes = 0;
@@ -1359,6 +1359,10 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
           TP_Buffer[i] = 0xFF;
         }
       }
+      Serial.print("TP_BAM Recieved PGN: "); 
+      Serial.print(TP_PGN);
+      Serial.print(" Num_Bytes: ");
+      Serial.println(TP_Num_Bytes);
       break;
     }
 
@@ -1371,9 +1375,10 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       {
         TP_Buffer[message_offset + i] = CAN_Message[i+1];
       }
+      Serial.print("TP_DATA Recieved Num ");
+      Serial.println(message_index);
       if(TPMessageRecived(TP_Num_Packets))
       {
-        TP_Mesage_Fully_Recieved = true;
         DecodeTransportProtocol();
       }
       break;
@@ -1382,6 +1387,15 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
 }
 
 bool ARD1939::TPMessageRecived(uint8_t num_packets)
+  /**
+  * Verifies all packets in a TP message have been recieved.
+  * 
+  * Parameters:
+  *     num_packets (uint8_t): The number of packets in the transport
+  *                            protocol message
+  * Returns:
+  *     (bool): false if any message has failed to be recieved, else true.
+  **/
 {
   for (int i = 0; i < num_packets; i++)
   {
@@ -1390,11 +1404,20 @@ bool ARD1939::TPMessageRecived(uint8_t num_packets)
       return false;
     }
   }
+  Serial.println("Whole message recieved");
   return true;
 }
 
 void ARD1939::DecodeTransportProtocol()
 {
+    /**
+    * Reads through the message stored in TP_Buffer and adds active faults to the fault table.
+    * 
+    * Parameters:
+    *     none
+    * Returns:
+    *     none
+    **/
   if(TP_PGN == DM1){
     InverterState.Protect_Lamp_Status = TP_Buffer[0] >> 6;
     InverterState.Amber_Warning_Lamp_Status = (TP_Buffer[0] >> 4) % 4;

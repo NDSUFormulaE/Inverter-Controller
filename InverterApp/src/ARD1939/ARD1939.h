@@ -102,6 +102,12 @@ struct FaultEntry
     boolean active = true;
 };
 
+struct FaultString
+{
+  char* FaultTable;
+  uint32_t length;
+};
+
 enum {MAX_FAULTS = 20};
 enum {TP_BUFFER_LENGTH = 1785};
 

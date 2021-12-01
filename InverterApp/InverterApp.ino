@@ -31,7 +31,7 @@ void setup()
         delay(500);
         resetFunc(); // If CAN Controller doesnt init correctly, wait 500ms then try again.
     }
-    Serial.print("Initialized\n");
+    Serial.println("Initialized");
 }
 
 void loop()

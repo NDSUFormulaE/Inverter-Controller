@@ -39,11 +39,11 @@ bool TaskScheduler::Init()
                 NAME_ARBITRARY_ADDRESS_CAPABLE);  
 
     uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x1F};
-    int SpeedCANMsgIndex = TaskScheduler::AddCANTask(0x06, COMMAND2_SPEED, TaskScheduler::GetSourceAddress(), 0xA2, 8, 15, DefaultSpeedArray);
-    if (SpeedCANMsgIndex != INVERTER_CMD_MESSAGE_INDEX)
-    {
-        return false;
-    }
+    // int SpeedCANMsgIndex = TaskScheduler::AddCANTask(0x06, COMMAND2_SPEED, TaskScheduler::GetSourceAddress(), 0xA2, 8, 15, DefaultSpeedArray);
+    // if (SpeedCANMsgIndex != INVERTER_CMD_MESSAGE_INDEX)
+    // {
+    //     return false;
+    // }
     return true;
 }
 
