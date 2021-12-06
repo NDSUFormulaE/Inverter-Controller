@@ -47,6 +47,7 @@ class TaskScheduler
         void UpdateSpeed(int CurrentPedalSpeed, int speedMessageIndex);
         void EnableDriveMessage(void);
         void DisableDriveMessage(void);
+        void ClearInverterFaults(void);
     private:
         void SendMessages();
         void RecieveMessages();

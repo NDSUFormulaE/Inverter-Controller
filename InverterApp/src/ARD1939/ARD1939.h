@@ -98,7 +98,7 @@ struct FaultEntry
     unsigned long SPN = 0;
     uint8_t FMI = 0;
     uint8_t OC = 0;
-    boolean active = false;
+    uint8_t active = 0;
 };
 
 struct FaultString
@@ -107,7 +107,7 @@ struct FaultString
   uint32_t length;
 };
 
-enum {MAX_FAULTS = 50};
+enum {MAX_FAULTS = 25};
 enum {TP_BUFFER_LENGTH = 1785};
 
 class ARD1939
@@ -132,6 +132,7 @@ class ARD1939
     void CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_MessageLen, uint8_t* CAN_DestAddr, uint8_t* CAN_SrcAddr, uint8_t* CAN_Priority);
     bool CheckValidState(void);
     int UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance);
+    void ClearFaults(void);
   private:
     uint8_t f01(uint8_t, uint8_t*);
     bool f02(void);
@@ -148,6 +149,7 @@ class ARD1939
     int AddNewFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance);
     bool TPMessageRecived(uint8_t num_packets);
     void DecodeTransportProtocol();
+    void ClearFaultTable(void);
     FaultEntry FaultTable[MAX_FAULTS];
     
 

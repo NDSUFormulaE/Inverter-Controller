@@ -1451,7 +1451,7 @@ int ARD1939::FirstFreeInFaultArray()
     **/
     for (int i = 0; i < MAX_FAULTS; i++)
     {
-        if (FaultTable[i].active == false)
+        if (FaultTable[i].active == 0)
         {
             return i;
         }
@@ -1494,8 +1494,7 @@ int ARD1939::isFaultInArray(unsigned long SPN, uint8_t FMI)
     **/
     for (int i = 0; i < MAX_FAULTS; i++)
     {
-        FaultEntry fault = FaultTable[i];
-        if(fault.active && (fault.SPN == SPN && fault.FMI == FMI))
+        if((FaultTable[i].active != 0) && (FaultTable[i].SPN == SPN && FaultTable[i].FMI == FMI))
         {
             return i;
         }
@@ -1522,7 +1521,7 @@ int ARD1939::AddNewFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
         FaultTable[firstFree].SPN = SPN;
         FaultTable[firstFree].FMI = FMI;
         FaultTable[firstFree].OC = Occurance;
-        FaultTable[firstFree].active = true;
+        FaultTable[firstFree].active = 1;
     }
     return firstFree;
 }
@@ -1541,7 +1540,7 @@ int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
     *     firstFree      (int): Index of the newly added FaultEntry
     **/
     int faultIndex = isFaultInArray(SPN, FMI);
-    char sString[80];
+    char sString[30];
     if(faultIndex > -1)
     {
         if(FaultTable[faultIndex].OC < Occurance)
@@ -1570,7 +1569,50 @@ int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
     return faultIndex;
 }
 
-bool ARD1939::CheckValidState(void){
+void ARD1939::ClearFaultTable(void)
+{
+    /**
+    * Iterate over the FaultTable and mark all as inactive
+    *
+    * Parameters:
+    *     none
+    * Returns:
+    *     none
+    **/
+  for(int i = 0; i < MAX_FAULTS; i++)
+  {
+    FaultTable[i].active = 0;
+  }
+}
+
+void ARD1939::ClearFaults(void)
+{
+    /**
+    * Clear the internal FaultTable and send a DM3 + DM11 message.
+    *
+    * Parameters:
+    *     none
+    * Returns:
+    *     none
+    **/
+  Serial.println("Clearing Bus Faults");
+  ARD1939::ClearFaultTable();
+  uint8_t priority = 6;
+  uint8_t clear_data[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+  ARD1939::Transmit(priority, DM3, ARD1939::GetSourceAddress(), 0xA2, &clear_data[0], 8);
+  ARD1939::Transmit(priority, DM11, ARD1939::GetSourceAddress(), 0xA2, &clear_data[0], 8);
+}
+
+bool ARD1939::CheckValidState(void)
+{
+    /**
+    * Checks the Current Inverter state and checks if we are in a non-fault state
+    *
+    * Parameters:
+    *     none
+    * Returns:
+    *     (bool): true if in a valid state, else false.
+    **/
   switch(InverterState.MCU_State){
     case MCU_STDBY: 
     case MCU_IGNIT_READY: 
