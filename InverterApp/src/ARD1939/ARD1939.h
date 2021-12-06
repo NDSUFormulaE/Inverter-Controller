@@ -28,14 +28,13 @@
 #if ARD1939VERSION == 1
   #define TRANSPORT_PROTOCOL                    1
   #define J1939_MSGLEN                          8
-  
   #define MSGFILTERS                            10
 #endif
 
 #if ARD1939VERSION == 2
-  #define TRANSPORT_PROTOCOL                    1
-  #define J1939_MSGLEN                          1785
-  #define MSGFILTERS                            100
+  #define TRANSPORT_PROTOCOL                    0
+  #define J1939_MSGLEN                          8
+  #define MSGFILTERS                            0
 #endif
 
 #define SA_PREFERRED                      	0x03
@@ -58,23 +57,23 @@
 #define NAME_ARBITRARY_ADDRESS_CAPABLE    	0x01
 
 // Return Codes
-#define ADDRESSCLAIM_INIT                       0
+#define ADDRESSCLAIM_INIT                   0
 #define ADDRESSCLAIM_INPROGRESS           	1
 #define ADDRESSCLAIM_FINISHED             	2
 #define NORMALDATATRAFFIC                 	2
 #define ADDRESSCLAIM_FAILED               	3
 
-#define J1939_MSG_NONE                   	0
-#define J1939_MSG_PROTOCOL               	1
-#define J1939_MSG_NETWORKDATA                   2
-#define J1939_MSG_APP                   	3
+#define J1939_MSG_NONE                   	  0
+#define J1939_MSG_PROTOCOL               	  1
+#define J1939_MSG_NETWORKDATA               2
+#define J1939_MSG_APP                   	  3
 
 // Compiler Settings
-#define OK                                     0
-#define ERR                                    1
+#define OK                                  0
+#define ERR                                 1
 
 // Debugger Settings
-#define DEBUG                                  1
+#define DEBUG                               1
 
 #if DEBUG == 1
 
@@ -96,10 +95,10 @@ struct v35
 
 struct FaultEntry
 {
-    uint32_t SPN;
-    uint8_t FMI;
-    uint8_t OC;
-    boolean active = true;
+    unsigned long SPN = 0;
+    uint8_t FMI = 0;
+    uint8_t OC = 0;
+    boolean active = false;
 };
 
 struct FaultString
@@ -108,7 +107,7 @@ struct FaultString
   uint32_t length;
 };
 
-enum {MAX_FAULTS = 20};
+enum {MAX_FAULTS = 50};
 enum {TP_BUFFER_LENGTH = 1785};
 
 class ARD1939
@@ -132,7 +131,7 @@ class ARD1939
     void DeleteMessageFilter(long lPGN);
     void CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_MessageLen, uint8_t* CAN_DestAddr, uint8_t* CAN_SrcAddr, uint8_t* CAN_Priority);
     bool CheckValidState(void);
-    int UpdateAddFault(uint32_t SPN, uint8_t FMI, uint8_t Occurance);
+    int UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance);
   private:
     uint8_t f01(uint8_t, uint8_t*);
     bool f02(void);
@@ -144,9 +143,9 @@ class ARD1939
     bool f08(long);
     bool f09(long);
     bool isFaultTableClear();
-    int isFaultInArray(uint32_t SPN, uint8_t FMI);
+    int isFaultInArray(unsigned long SPN, uint8_t FMI);
     int FirstFreeInFaultArray();
-    int AddNewFault(uint32_t SPN, uint8_t FMI, uint8_t Occurance);
+    int AddNewFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance);
     bool TPMessageRecived(uint8_t num_packets);
     void DecodeTransportProtocol();
     FaultEntry FaultTable[MAX_FAULTS];

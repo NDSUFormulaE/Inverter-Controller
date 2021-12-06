@@ -39,11 +39,7 @@ bool TaskScheduler::Init()
                 NAME_ARBITRARY_ADDRESS_CAPABLE);  
 
     uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x1F};
-    // int SpeedCANMsgIndex = TaskScheduler::AddCANTask(0x06, COMMAND2_SPEED, TaskScheduler::GetSourceAddress(), 0xA2, 8, 15, DefaultSpeedArray);
-    // if (SpeedCANMsgIndex != INVERTER_CMD_MESSAGE_INDEX)
-    // {
-    //     return false;
-    // }
+    TaskScheduler::SetupCANTask(0x06, COMMAND2_SPEED, TaskScheduler::GetSourceAddress(), 0xA2, 8, 15, DefaultSpeedArray, INVERTER_CMD_MESSAGE_INDEX);
     return true;
 }
 
@@ -117,20 +113,8 @@ void TaskScheduler::RecieveMessages()
     char sString[80];
 
     J1939Status = j1939.Operate(&MsgId, &PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
-    if(MsgLen != 0 ){
-        sprintf(sString, "PGN: 0x%X Src: 0x%X Dest: 0x%X Len: %i ", (int)PGN, SrcAddr, DestAddr, MsgLen);
-        Serial.print(sString);
-        Serial.print("Data: ");
-        for(int nIndex = 0; nIndex < MsgLen; nIndex++)
-        {          
-          sprintf(sString, "0x%X ", Msg[nIndex]);
-          Serial.print(sString);
-          
-        }// end for
-        Serial.print("\n\r");
-        MsgId = J1939_MSG_NONE;
-      }
-    if (J1939Status == NORMALDATATRAFFIC)
+    // J1939_MSG_APP means normal Data Packet && J1939_MSG_PROTOCOL means Transport Protocol Announcement.
+    if(J1939Status == NORMALDATATRAFFIC && (MsgId == J1939_MSG_APP || MsgId == J1939_MSG_PROTOCOL))
     {
         j1939.CANInterpret(&PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
     }
@@ -155,21 +139,67 @@ int TaskScheduler::AddCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8
     int firstFree = FirstFreeInCANTasks();
     if (firstFree != -1)
     {
-        CANTasks[firstFree].task.priority = priority;
-        CANTasks[firstFree].task.PGN = PGN;
-        CANTasks[firstFree].task.srcAddr = srcAddr;
-        CANTasks[firstFree].task.destAddr = destAddr;
-        CANTasks[firstFree].task.msgLen = msgLen;
-        CANTasks[firstFree].task.interval = interval;
-        for (int i = 0; i < msgLen; i++)
-        {
-            CANTasks[firstFree].task.msg[i] = msg[i];
-        }
-        CANTasks[firstFree].initialized = true;
-        CANTasks[firstFree].lastRunTime = 0;
+        TaskScheduler::SetupCANTask(priority, PGN, srcAddr, destAddr, msgLen, interval, msg, firstFree);
     }
     return firstFree;
 }
+
+void TaskScheduler::SetupCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8_t destAddr, int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN], int index)
+{
+    /**
+    * Configure a new CANTask in the array with a given index.
+    *
+    * Parameters:
+    *     priority   (uint8_t): Priority of the message to be sent
+    *     PGN           (long): Message PGN
+    *     srcAddr    (uint8_t): Address of the device sending the message
+    *     destAddr   (uint8_t): Address of the device recieving the message
+    *     msgLen         (int): Length of the message 
+    *     interval     (ulong): Number of milliseconds between sending the message
+    *     msg      (uint8_t[]): Message to be sent
+    * Returns:
+    *     none
+    **/
+    CANTasks[index].task.priority = priority;
+    CANTasks[index].task.PGN = PGN;
+    CANTasks[index].task.srcAddr = srcAddr;
+    CANTasks[index].task.destAddr = destAddr;
+    CANTasks[index].task.msgLen = msgLen;
+    CANTasks[index].task.interval = interval;
+    for (int i = 0; i < msgLen; i++)
+    {
+        CANTasks[index].task.msg[i] = msg[i];
+    }
+    CANTasks[index].initialized = true;
+    CANTasks[index].lastRunTime = 0;
+}
+
+void TaskScheduler::EnableDriveMessage(void)
+{
+    /**
+    * Enables the Drive Message at INVERTER_CMD_MESSAGE_INDEX
+    * 
+    * Parameters:
+    *     none
+    * Returns:
+    *     none
+    **/
+    CANTasks[INVERTER_CMD_MESSAGE_INDEX].initialized = true;
+}
+
+void TaskScheduler::DisableDriveMessage(void)
+{
+    /**
+    * Disables the Drive Message at INVERTER_CMD_MESSAGE_INDEX
+    * 
+    * Parameters:
+    *     none
+    * Returns:
+    *     none
+    **/
+    CANTasks[INVERTER_CMD_MESSAGE_INDEX].initialized = false;
+}
+
 
 void RemoveCANTask(int taskIndex)
 {
@@ -244,7 +274,7 @@ bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
     *    stateTransition             (int): State transition command from CAN Spec 2.3.3.
     *    speedMessageIndex           (int): 6th byte of the speed mode in CAN Spec 2.3.1.2.
     * Returns:
-    *    False if InverterState.MCU_State != start. True otherwise.
+    *    False if InverterState.MCU_State isn't in the commanded start state. True otherwise.
     **/
 
     int start;
@@ -335,7 +365,7 @@ bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
 
         if(InverterState.MCU_State != start)
         {
-            return -1;
+            return false;
         }
 
         uint8_t array[J1939_MSGLEN];
@@ -347,12 +377,13 @@ bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
 
         array[6] = stateTransition;
 
-       j1939.Transmit(CANTasks[speedMessageIndex].task.priority, 
+        j1939.Transmit(CANTasks[speedMessageIndex].task.priority, 
                             CANTasks[speedMessageIndex].task.PGN,
                             CANTasks[speedMessageIndex].task.srcAddr,
                             CANTasks[speedMessageIndex].task.destAddr,
                             &array[0], 
                             J1939_MSGLEN);
+        return true;
 }
 
 void TaskScheduler::UpdateSpeed(int currentPedalSpeed, int speedMessageIndex)
@@ -362,21 +393,13 @@ void TaskScheduler::UpdateSpeed(int currentPedalSpeed, int speedMessageIndex)
     *
     * Parameters:
     *    currentPedalSpeed      (uint16_t): Speed of pedal (RPM).
-    *    speedMessageIndex           (int): 6th byte of the speed mode in CAN Spec 2.3.1.2.
+    *    speedMessageIndex           (int): Index of the speedMessage in CANTasks array.
     * Returns:
     *    none
     **/
 
-   if(currentPedalSpeed >1023)
-   {
-       currentPedalSpeed = 1023;
-   }
-
-    uint16_t newSpeed = 0;
-    newSpeed = (currentPedalSpeed *.34100684)+32000;
-
-    UpdateMsgByte(speedMessageIndex, newSpeed % 0xFF ,2);
-    UpdateMsgByte(speedMessageIndex, newSpeed >> 8, 3);
+    UpdateMsgByte(speedMessageIndex, currentPedalSpeed % 0x100 , 2);
+    UpdateMsgByte(speedMessageIndex, currentPedalSpeed >> 8, 3);
 }
 
 //// Private Functions
@@ -384,13 +407,14 @@ int TaskScheduler::FirstFreeInCANTasks()
 {
     /**
     * Iterates over the CANTasks array until it finds the first open spot in the array.
+    * Will not return the index of the Control Message (0)
     * 
     * Parameters:
     *     none
     * Returns:
     *     i (int): index of the first free object in array
     **/
-    for (int i = 0; i < MAX_TASKS; i++)
+    for (int i = 1; i < MAX_TASKS; i++)
     {
         if (CANTasks[i].initialized == false)
         {

@@ -1,3 +1,4 @@
+
 #include <stdlib.h>
 #include <inttypes.h>
 #include <SPI.h>
@@ -31,14 +32,12 @@ void setup()
         delay(500);
         resetFunc(); // If CAN Controller doesnt init correctly, wait 500ms then try again.
     }
+    taskMan.DisableDriveMessage();
     Serial.println("Initialized");
 }
 
 void loop()
 {
-    int tempSpeed = analogRead(2);
-    tempSpeed = map(tempSpeed, 0, 1023, 32000, 32200);
-    taskMan.UpdateSpeed(tempSpeed, INVERTER_CMD_MESSAGE_INDEX);
-    Serial.println(InverterState.Abs_Machine_Speed);
+    taskMan.UpdateSpeed(gpioMan.GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
     taskMan.RunLoop();
 }
