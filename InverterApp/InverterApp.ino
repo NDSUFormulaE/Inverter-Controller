@@ -8,8 +8,8 @@
 #include "src/ARD1939/CAN_SPEC/StateTransition.h"
 
 //// Subsystem imports
-#include "src/TaskScheduler/TaskScheduler.h"
 #include "src/gpioHandler/gpioHandler.h"
+// #include "src/TaskScheduler/TaskScheduler.h" // imported in gpioHandler.h Arduino IDE has a stroke if also defined here
 
 //// Definitions
 // Reset function
@@ -40,4 +40,8 @@ void loop()
 {
     taskMan.UpdateSpeed(gpioMan.GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
     taskMan.RunLoop();
+    if (gpioMan.GetClearPin())
+    {
+        taskMan.ClearInverterFaults();
+    }
 }

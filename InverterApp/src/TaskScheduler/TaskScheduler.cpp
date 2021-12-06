@@ -59,7 +59,6 @@ void TaskScheduler::RunLoop()
     *     none
     **/
     TaskScheduler::SendMessages();
-    // Caused issues with bytes to send over CAN. Test with the Due.
     TaskScheduler::RecieveMessages();
 }
 
@@ -116,6 +115,19 @@ void TaskScheduler::RecieveMessages()
     // J1939_MSG_APP means normal Data Packet && J1939_MSG_PROTOCOL means Transport Protocol Announcement.
     if(J1939Status == NORMALDATATRAFFIC && (MsgId == J1939_MSG_APP || MsgId == J1939_MSG_PROTOCOL))
     {
+        // if(MsgLen != 0 ){
+        //     sprintf(sString, "PGN: 0x%X Src: 0x%X Dest: 0x%X Len: %i ", (int)PGN, SrcAddr, DestAddr, MsgLen);
+        //     Serial.print(sString);
+        //     Serial.print("Data: ");
+        //     for(int nIndex = 0; nIndex < MsgLen; nIndex++)
+        //     {          
+        //     sprintf(sString, "0x%X ", Msg[nIndex]);
+        //     Serial.print(sString);
+
+        //     }// end for
+        //     Serial.print("\n\r");
+        //     MsgId = J1939_MSG_NONE;
+        // }
         j1939.CANInterpret(&PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
     }
 }
@@ -400,6 +412,21 @@ void TaskScheduler::UpdateSpeed(int currentPedalSpeed, int speedMessageIndex)
 
     UpdateMsgByte(speedMessageIndex, currentPedalSpeed % 0x100 , 2);
     UpdateMsgByte(speedMessageIndex, currentPedalSpeed >> 8, 3);
+}
+
+void TaskScheduler::ClearInverterFaults(void)
+{
+    /**
+    * Clears Fault Table and sends DM3 && DM11 Messages.
+    * DM3: Clear of Previously Active Diagnostic Trouble Codes
+    * DM11: Clear of Active Diagnostic Trouble Codes
+    *
+    * Parameters:
+    *    none
+    * Returns:
+    *    none
+    **/
+    j1939.ClearFaults();
 }
 
 //// Private Functions
