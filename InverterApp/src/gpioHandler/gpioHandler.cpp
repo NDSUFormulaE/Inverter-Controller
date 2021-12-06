@@ -1,7 +1,5 @@
 #include "gpioHandler.h"
 
-uint16_t speed = 0;
-
 bool GPIOHandler::Init()
 {
     // Configure all of our GPIOs
@@ -10,6 +8,6 @@ bool GPIOHandler::Init()
 
 uint16_t GPIOHandler::GetPedalSpeed()
 {
-    speed++;
-    return speed;
+    int potent_read = analogRead(POT_GPIO);
+    return map(potent_read, 0, 1023, SPEED_OFFSET + SPEED_MIN_RPM, SPEED_OFFSET + SPEED_MAX_RPM);;
 }
