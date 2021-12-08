@@ -1333,9 +1333,12 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       InverterState.Flash_Red_Stop_Lamp_Status = (CAN_Message[1] >> 2) % 4;
       InverterState.Flash_Multi_Indicator_Lamp_Status = CAN_Message[1] % 4;
 
-      uint32_t SPN = CAN_Message[2] + (CAN_Message[3] << 8) + ((unsigned long)(CAN_Message[4] % (1 << 3)) << 16);
-      uint8_t FMI = CAN_Message[4] >> 3;
-      uint8_t Occ = CAN_Message[5] >> 1;
+      unsigned long SPN_Top = (unsigned long)(CAN_Message[4] >> 5);
+      unsigned long SPN_Mid = (unsigned long)CAN_Message[3];
+      unsigned long SPN_Bottom = CAN_Message[2];
+      unsigned long SPN = ((SPN_Top << 16) + (SPN_Mid << 8) + SPN_Bottom);
+      uint8_t FMI = CAN_Message[4] & 0b11111;
+      uint8_t Occ = CAN_Message[5] & 0b1111111;
       UpdateAddFault(SPN, FMI, Occ);
       break;
     }
@@ -1428,12 +1431,12 @@ void ARD1939::DecodeTransportProtocol()
     int Num_DM1s = (TP_Num_Bytes - 2)/4;
     for(int i = 0; i < Num_DM1s; i++)
     {
-      unsigned long TP_SPN_Top = (unsigned long)(TP_Buffer[(4*i) + 4] & 0b111);
+      unsigned long TP_SPN_Top = (unsigned long)(TP_Buffer[(4*i) + 4] >> 5);
       unsigned long TP_SPN_Mid = (unsigned long)TP_Buffer[(4*i) + 3];
       unsigned long TP_SPN_Bottom = TP_Buffer[(4*i) + 2];
       unsigned long SPN = ((TP_SPN_Top << 16) + (TP_SPN_Mid << 8) + TP_SPN_Bottom);
-      uint8_t FMI = TP_Buffer[(4*i) + 4] >> 3;
-      uint8_t Occ = TP_Buffer[(4*i) + 5] >> 1;
+      uint8_t FMI = TP_Buffer[(4*i) + 4] & 0b11111;
+      uint8_t Occ = TP_Buffer[(4*i) + 5] & 0b1111111;
       UpdateAddFault(SPN, FMI, Occ);
     }
   } 
