@@ -12,7 +12,8 @@
 
 #define CLEAR_INTERVAL_MILLIS 5000
 
-#define DISPLAYS_ENABLED
+//If displays connected, uncomment next line.
+//#define DISPLAYS_ENABLED
 
 #define SPD_DISPLAY_CLK 0
 
