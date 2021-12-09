@@ -5,6 +5,7 @@
 #include "CAN_SPEC/MotorControlUnitState.h"
 #include "CAN_SPEC/PGN.h"
 #include "ARD1939.h"
+#include "Arduino.h"
 
 #define d49                             10
 
@@ -184,7 +185,16 @@ extern uint8_t canInit(void);
 extern uint8_t canCheckError(void);
 extern uint8_t canTransmit(long, unsigned char*, int);
 extern uint8_t canReceive(long*, unsigned char*, int*);
+
 struct CANVariables InverterState = {};
+struct FaultEntry FaultTable[MAX_FAULTS];
+bool TP_BAM_Recieved = false;
+uint8_t TP_Buffer[TP_BUFFER_LENGTH];
+uint8_t TP_Message_Recieved_Counter[255];
+uint16_t TP_Num_Bytes = 0;
+uint8_t TP_Num_Packets = 0;
+uint16_t TP_PGN = 0;
+
 uint8_t ARD1939::Init(int v80)
 {
   int v65;
@@ -1168,7 +1178,6 @@ void ARD1939::f12(uint8_t v90)
 void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_MessageLen, uint8_t* CAN_DestAddr, uint8_t* CAN_SrcAddr, uint8_t* CAN_Priority){
 
   InverterState.Last_Message = CAN_Message;
-
   switch(int(*CAN_PGN)){
     case ADDRESS_CLAIM_RESPONSE:
     {
@@ -1324,17 +1333,286 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       InverterState.Flash_Red_Stop_Lamp_Status = (CAN_Message[1] >> 2) % 4;
       InverterState.Flash_Multi_Indicator_Lamp_Status = CAN_Message[1] % 4;
 
-      InverterState.DM1_SPN = CAN_Message[2] + (CAN_Message[3] << 8);
+      uint32_t SPN = CAN_Message[2] + (CAN_Message[3] << 8) + ((unsigned long)(CAN_Message[4] % (1 << 3)) << 16);
+      uint8_t FMI = CAN_Message[4] >> 3;
+      uint8_t Occ = CAN_Message[5] >> 1;
+      UpdateAddFault(SPN, FMI, Occ);
+      break;
+    }
 
-      InverterState.DM1_FMI = CAN_Message[4] % 8;
+    case TP_BAM:
+    {
+      TP_BAM_Recieved = true;
+      TP_Num_Bytes = CAN_Message[1] + (CAN_Message[2] << 8);
+      TP_Num_Packets = CAN_Message[3];
+      TP_PGN = CAN_Message[5] + (CAN_Message[6] << 8);
+      for(int i = 0; i < TP_Num_Packets; i++)
+      {
+        if(TP_Message_Recieved_Counter[i] == 1)
+        {
+          TP_Message_Recieved_Counter[i] = 0;
+        }
+      }
+      for(int i = 0; i < TP_Num_Bytes; i++){
+        if(TP_Buffer[i] != 0xFF){
+          TP_Buffer[i] = 0xFF;
+        }
+      }
+      // Serial.print("TP_BAM Recieved PGN: "); 
+      // Serial.print(TP_PGN);
+      // Serial.print(" Num_Bytes: ");
+      // Serial.println(TP_Num_Bytes);
+      break;
+    }
 
-      InverterState.Occurrence_Count = CAN_Message[5] % 2;
+    case TP_DATA:
+    {
+      uint8_t message_index = CAN_Message[0] - 1;
+      uint16_t message_offset = 7 * message_index;
+      TP_Message_Recieved_Counter[message_index] = 1;
+      for(int i = 0; i < 7; i++)
+      {
+        TP_Buffer[message_offset + i] = CAN_Message[i+1];
+      }
+      if(TPMessageRecived(TP_Num_Packets))
+      {
+        DecodeTransportProtocol();
+      }
       break;
     }
   }
 }
 
-bool ARD1939::CheckValidState(void){
+bool ARD1939::TPMessageRecived(uint8_t num_packets)
+  /**
+  * Verifies all packets in a TP message have been recieved.
+  * 
+  * Parameters:
+  *     num_packets (uint8_t): The number of packets in the transport
+  *                            protocol message
+  * Returns:
+  *     (bool): false if any message has failed to be recieved, else true.
+  **/
+{
+  for (int i = 0; i < num_packets; i++)
+  {
+    if (TP_Message_Recieved_Counter[i] != 1)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+void ARD1939::DecodeTransportProtocol()
+{
+    /**
+    * Reads through the message stored in TP_Buffer and adds active faults to the fault table.
+    * 
+    * Parameters:
+    *     none
+    * Returns:
+    *     none
+    **/
+  if(TP_PGN == DM1){
+    InverterState.Protect_Lamp_Status = TP_Buffer[0] >> 6;
+    InverterState.Amber_Warning_Lamp_Status = (TP_Buffer[0] >> 4) % 4;
+    InverterState.Red_Stop_Lamp_Status = (TP_Buffer[0] >> 2) % 4;
+    InverterState.Multi_Indicator_Lamp_Status = TP_Buffer[0] % 4;
+
+    InverterState.Flash_Protect_Lamp_Status = TP_Buffer[1] >> 6;
+    InverterState.Flash_Amber_Warning_Lamp_Status = (TP_Buffer[1] >> 4) % 4;
+    InverterState.Flash_Red_Stop_Lamp_Status = (TP_Buffer[1] >> 2) % 4;
+    InverterState.Flash_Multi_Indicator_Lamp_Status = TP_Buffer[1] % 4;
+
+    int Num_DM1s = (TP_Num_Bytes - 2)/4;
+    for(int i = 0; i < Num_DM1s; i++)
+    {
+      unsigned long TP_SPN_Top = (unsigned long)(TP_Buffer[(4*i) + 4] & 0b111);
+      unsigned long TP_SPN_Mid = (unsigned long)TP_Buffer[(4*i) + 3];
+      unsigned long TP_SPN_Bottom = TP_Buffer[(4*i) + 2];
+      unsigned long SPN = ((TP_SPN_Top << 16) + (TP_SPN_Mid << 8) + TP_SPN_Bottom);
+      uint8_t FMI = TP_Buffer[(4*i) + 4] >> 3;
+      uint8_t Occ = TP_Buffer[(4*i) + 5] >> 1;
+      UpdateAddFault(SPN, FMI, Occ);
+    }
+  } 
+}
+
+int ARD1939::FirstFreeInFaultArray()
+{
+    /**
+    * Iterates over the FaultTable array until it finds the first open spot in the array.
+    * 
+    * Parameters:
+    *     none
+    * Returns:
+    *     i (int): index of the first free object in array, -1 if full.
+    **/
+    for (int i = 0; i < MAX_FAULTS; i++)
+    {
+        if (FaultTable[i].active == 0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool ARD1939::isFaultTableClear()
+{
+    /**
+    * Iterates over the FaultTable array and checks if all faults are inactive.
+    * 
+    * Parameters:
+    *     none
+    * Returns:
+    *     (bool): true if no faults in array, else false.
+    **/
+    for (FaultEntry fault : FaultTable)
+    {
+        if (fault.active)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+int ARD1939::isFaultInArray(unsigned long SPN, uint8_t FMI)
+{
+    /**
+    * Iterates over the FaultTable array and checks if active fault
+    * matching SPN and FMI in the is in the array
+    * 
+    * Parameters:
+    *     SPN       (uint16_t): Suspect Parameter Number of Fault
+    *     FMI        (uint8_t): Failure mode identifier
+    * Returns:
+    *     index          (int): Index of fault if exists and is active.
+    *                           else -1.
+    **/
+    for (int i = 0; i < MAX_FAULTS; i++)
+    {
+        if((FaultTable[i].active != 0) && (FaultTable[i].SPN == SPN && FaultTable[i].FMI == FMI))
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int ARD1939::AddNewFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
+{
+    /**
+    * Configure a new FaultEntry in array.
+    *
+    * Parameters:
+    *     SPN       (uint16_t): Suspect Parameter Number of Fault
+    *     FMI        (uint8_t): Failure mode identifier
+    *     OC         (uint8_t): Number of fault occurances 
+    *     CM         (uint8_t): SPN conversion method
+    * Returns:
+    *     firstFree      (int): Index of the newly added FaultEntry
+    **/
+    int firstFree = FirstFreeInFaultArray();
+    if (firstFree != -1)
+    {
+        FaultTable[firstFree].SPN = SPN;
+        FaultTable[firstFree].FMI = FMI;
+        FaultTable[firstFree].OC = Occurance;
+        FaultTable[firstFree].active = 1;
+    }
+    return firstFree;
+}
+
+int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
+{
+    /**
+    * Configure a new FaultEntry in array, if it already exists update the occurance.
+    *
+    * Parameters:
+    *     SPN       (uint16_t): Suspect Parameter Number of Fault
+    *     FMI        (uint8_t): Failure mode identifier
+    *     OC         (uint8_t): Number of fault occurances 
+    *     CM         (uint8_t): SPN conversion method
+    * Returns:
+    *     firstFree      (int): Index of the newly added FaultEntry
+    **/
+    int faultIndex = isFaultInArray(SPN, FMI);
+    char sString[30];
+    if(faultIndex > -1)
+    {
+        if(FaultTable[faultIndex].OC < Occurance)
+        {
+          FaultTable[faultIndex].OC = Occurance;
+          Serial.print("FAULT UPDATE - SPN: ");
+          sprintf(sString, "%lu ", SPN);
+          Serial.print(sString);
+          Serial.print(" FMI: ");
+          Serial.print(FMI);
+          Serial.print(" Occ: ");
+          Serial.println(Occurance);
+        } 
+    }
+    else
+    {
+        AddNewFault(SPN, FMI, Occurance);
+        Serial.print("FAULT NEW - SPN: ");
+        sprintf(sString, "%lu ", SPN);
+        Serial.print(sString);
+        Serial.print(" FMI: ");
+        Serial.print(FMI);
+        Serial.print(" Occ: ");
+        Serial.println(Occurance);
+    }
+    return faultIndex;
+}
+
+void ARD1939::ClearFaultTable(void)
+{
+    /**
+    * Iterate over the FaultTable and mark all as inactive
+    *
+    * Parameters:
+    *     none
+    * Returns:
+    *     none
+    **/
+  for(int i = 0; i < MAX_FAULTS; i++)
+  {
+    FaultTable[i].active = 0;
+  }
+}
+
+void ARD1939::ClearFaults(void)
+{
+    /**
+    * Clear the internal FaultTable and send a DM3 + DM11 message.
+    *
+    * Parameters:
+    *     none
+    * Returns:
+    *     none
+    **/
+  Serial.println("Clearing Bus Faults");
+  ARD1939::ClearFaultTable();
+  uint8_t priority = 6;
+  uint8_t clear_data[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+  ARD1939::Transmit(priority, DM3, ARD1939::GetSourceAddress(), 0xA2, &clear_data[0], 8);
+  ARD1939::Transmit(priority, DM11, ARD1939::GetSourceAddress(), 0xA2, &clear_data[0], 8);
+}
+
+bool ARD1939::CheckValidState(void)
+{
+    /**
+    * Checks the Current Inverter state and checks if we are in a non-fault state
+    *
+    * Parameters:
+    *     none
+    * Returns:
+    *     (bool): true if in a valid state, else false.
+    **/
   switch(InverterState.MCU_State){
     case MCU_STDBY: 
     case MCU_IGNIT_READY: 

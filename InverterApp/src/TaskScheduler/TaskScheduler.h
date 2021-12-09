@@ -3,11 +3,11 @@
 #include <Arduino.h>
 
 #include "../ARD1939/ARD1939.h"
+#include "../ARD1939/CAN_SPEC/PGN.h"
 
-// "#defines"
-enum {MAX_TASKS = 20};
+enum {MAX_TASKS = 15};
+#define INVERTER_CMD_MESSAGE_INDEX 0
 
-// Task Structure Def
 struct CANTask
 {
     uint8_t priority;
@@ -44,10 +44,15 @@ class TaskScheduler
         void RunLoop();
         uint8_t GetSourceAddress();
         bool ChangeState(int StateTransition, int speedMessageIndex);
+        void UpdateSpeed(int CurrentPedalSpeed, int speedMessageIndex);
+        void EnableDriveMessage(void);
+        void DisableDriveMessage(void);
+        void ClearInverterFaults(void);
     private:
         void SendMessages();
         void RecieveMessages();
-        int FirstFreeInArray();
+        int FirstFreeInCANTasks();
+        void SetupCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8_t destAddr, int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN], int index);
         InitializedCANTask CANTasks[MAX_TASKS];
         ARD1939 j1939;
 };
