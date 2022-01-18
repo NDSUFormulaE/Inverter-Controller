@@ -5,6 +5,7 @@
 
 InitializedCANTask CANTasks[MAX_TASKS];
 ARD1939 j1939;
+extern struct CANVariables InverterState;
 
 //// Main Tasks
 bool TaskScheduler::Init()
@@ -38,8 +39,8 @@ bool TaskScheduler::Init()
                 NAME_INDUSTRY_GROUP,
                 NAME_ARBITRARY_ADDRESS_CAPABLE);  
 
-    uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x1F};
-    TaskScheduler::SetupCANTask(0x06, COMMAND2_SPEED, TaskScheduler::GetSourceAddress(), 0xA2, 8, 15, DefaultSpeedArray, INVERTER_CMD_MESSAGE_INDEX);
+    uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
+    TaskScheduler::SetupCANTask(0x06, COMMAND2_SPEED, 0x03, 0xA2, 8, 15, DefaultSpeedArray, INVERTER_CMD_MESSAGE_INDEX);
     return true;
 }
 
@@ -427,6 +428,14 @@ void TaskScheduler::ClearInverterFaults(void)
     *    none
     **/
     j1939.ClearFaults();
+    if(InverterState.MCU_State == MCU_FAULT_CLASSA)
+    {
+        TaskScheduler::ChangeState(FAULT_CLASSA_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
+    }else if(InverterState.MCU_State == MCU_FAULT_CLASSB)
+    {
+        TaskScheduler::ChangeState(FAULT_CLASSB_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
+    }
+    
 }
 
 //// Private Functions
