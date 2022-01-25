@@ -17,19 +17,19 @@
 
 #define SPD_DISPLAY_CLK 0
 
-## Speed Display Pins
+// Speed Display Pins
 #define SPD_CLK 22
 #define SPD_DATA 24
 
-## Battery Voltage Pins
+// Battery Voltage Pins
 #define BATT_CLK 26
 #define BATT_DATA 28
 
-## Motor Temperature Pins
+// Motor Temperature Pins
 #define TEMP_CLK 30
 #define TEMP_DATA 32
 
-## Coolant Temperature Pins
+// Coolant Temperature Pins
 #define COOL_CLK 34
 #define COOL_DATA 36
 

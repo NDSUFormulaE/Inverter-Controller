@@ -22,7 +22,7 @@ bool GPIOHandler::Init()
     #else
         return true;
     #endif
-
+}
 unsigned long last_clear = 0;
 
 uint16_t GPIOHandler::GetPedalSpeed()
