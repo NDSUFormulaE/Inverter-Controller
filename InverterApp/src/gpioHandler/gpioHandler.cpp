@@ -8,7 +8,7 @@ bool GPIOHandler::Init()
     // Configure all of our GPIOs
     #ifdef DISPLAYS_ENABLED
         // ALL OF OUR CODE
-        TM1637TinyDisplay speedDisplay(22, 24), batteryDisplay(26,28), motorTempDisplay(30,32), coolantTempDisplay(34,36);
+        TM1637TinyDisplay speedDisplay(SPD_CLK, SPD_DATA), batteryDisplay(BATT_CLK,BATT_DATA), motorTempDisplay(TEMP_CLK,TEMP_DATA), coolantTempDisplay(COOL_CLK,COOL_DATA);
         speedDisplay.setBrightness(7);
         batteryDisplay.setBrightness(7);
         coolantTempDisplay.setBrightness(7);
