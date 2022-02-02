@@ -14,4 +14,4 @@ All important code is found inside the ``InverterApp``.
 - ``docs``: Contains all documentation from John Deere about the inverter and docs from the ARD1939 library    
 
 ## Guides
-Check out this repos `wiki` for more details on setting up and building the application as well as general information on CAN
+Check out this repos [`wiki`](https://github.com/NDSUFormulaE/Inverter-Controller/wiki) for more details on setting up and building the application as well as general information on CAN
