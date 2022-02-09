@@ -37,8 +37,10 @@ class GPIOHandler
 {
     public:
         bool Init(void);
+        bool LcdInit(void);
         uint16_t GetPedalSpeed();
         uint8_t GetClearPin();
+        void LCDDisplaySAE();
     private:
         uint16_t speed;
 };

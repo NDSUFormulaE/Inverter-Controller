@@ -1,5 +1,6 @@
 #include "gpioHandler.h"
 #include "TM1637TinyDisplay.h"
+#include "lcd.h"
 uint16_t speed = 0;
 
 
@@ -9,6 +10,7 @@ bool GPIOHandler::Init()
     #ifdef DISPLAYS_ENABLED
         // ALL OF OUR CODE
         TM1637TinyDisplay speedDisplay(22, 24), batteryDisplay(26,28), motorTempDisplay(30,32), coolantTempDisplay(34,36);
+        LiquidCrystal_I2C lcd(0x27,20,4);
         speedDisplay.setBrightness(7);
         batteryDisplay.setBrightness(7);
         coolantTempDisplay.setBrightness(7);
@@ -25,6 +27,23 @@ bool GPIOHandler::Init()
 
 unsigned long last_clear = 0;
 
+bool GPIOHandler::LcdInit()
+{
+    //Initialized screen and backlight.
+  lcd.init();
+  lcd.backlight();
+
+  //Characters used to create the logo
+  lcd.begin(20, 4);
+  lcd.createChar(0, fullBox);
+  lcd.createChar(1, halfBoxBottom);
+  lcd.createChar(2, halfBoxTop);
+  lcd.createChar(3, topLeftAChar);
+  lcd.createChar(4, sideLeftAChar);
+  lcd.createChar(5, sideLeftAInnerChar);
+  lcd.createChar(6, sideLeftInnerCharConnector);
+  lcd.createChar(7, topRightSCurve);
+}
 uint16_t GPIOHandler::GetPedalSpeed()
 {
     int potent_read = analogRead(POT_GPIO);
@@ -39,4 +58,10 @@ uint8_t GPIOHandler::GetClearPin()
         return 1;
     }
     return 0;
+}
+void GPIOHandler::LCDDisplaySAE()
+{
+    lcd.display();
+    delay(3000);
+    lcd.noDisplay();
 }
