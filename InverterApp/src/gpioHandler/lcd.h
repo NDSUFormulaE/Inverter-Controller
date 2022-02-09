@@ -2,8 +2,6 @@
 #include <cstddef>
 using byte = uint8_t;
 
-struct lcdLetters
-{
      byte empty[8] = {
          0x00,
          0x00,
@@ -114,4 +112,4 @@ struct lcdLetters
          0x0F,
          0x07,
      };
-};
+     
