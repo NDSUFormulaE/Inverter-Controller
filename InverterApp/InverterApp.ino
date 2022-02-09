@@ -21,9 +21,23 @@ bool InitialState = true;
 bool InverterPowerOffState = false;
 bool InverterNormalOpState = false;
 
+// Common TaskScheduler/GPIOHandler pointer struct
+struct ManagerPointers
+{
+    TaskScheduler* TaskPoint;
+    GPIOHandler* GPIOPoint;
+};
+
+// Task Defines
+void TaskInverterStateManager(void * pvParameters);
+void TaskCANLoop(void * pvParameters);
+void TaskClearFaults(void * pvParameters);
+
 // Managers
 TaskScheduler taskMan;
 GPIOHandler gpioMan;
+ManagerPointers ManPointer;
+
 
 // Imports
 extern struct CANVariables InverterState;
@@ -31,6 +45,8 @@ extern struct CANVariables InverterState;
 //// Functions
 void setup()
 {
+    ManPointer.TaskPoint = &taskMan;
+    ManPointer.GPIOPoint = &gpioMan;
     Serial.begin(115200);
     if ((taskMan.Init() == false) || (gpioMan.Init() == false))
     {
@@ -40,14 +56,27 @@ void setup()
     Serial.println("Initialized");
 }
 
+void TaskClearFaults(void * pvParameters)
+{
+    ManagerPointers ManPoint = *((ManagerPointers*)pvParameters);
+    TaskScheduler TaskSched = *(ManPoint.TaskPoint);
+    GPIOHandler GPIOHand = *(ManPoint.GPIOPoint);
+    for (;;)
+    {
+        if (GPIOHand.GetClearPin())
+        {
+            TaskSched.ClearInverterFaults();
+        }
+        vTaskDelay(5);
+    }
+}
+
+
 void loop()
 {
     taskMan.UpdateSpeed(gpioMan.GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
     taskMan.RunLoop();
-    if (gpioMan.GetClearPin())
-    {
-        taskMan.ClearInverterFaults();
-    }
+
     InverterStateMachineControl();
 }
 
