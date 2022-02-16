@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include <TimeLib.h>
+#include "../Time/TimeLib.h"
 #include <Arduino.h>
 #include "../TaskScheduler/TaskScheduler.h"
 
@@ -38,7 +38,7 @@ class GPIOHandler
     public:
         bool Init(void);
         uint16_t GetPedalSpeed();
-        uint8_t GetClearPin();
+        uint16_t GetClearPin();
     private:
         uint16_t speed;
 };
