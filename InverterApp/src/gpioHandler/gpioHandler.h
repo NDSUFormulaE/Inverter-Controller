@@ -38,7 +38,7 @@ class GPIOHandler
     public:
         bool Init(void);
         uint16_t GetPedalSpeed();
-        uint8_t GetClearPin();
+        uint16_t GetClearPin();
     private:
         uint16_t speed;
 };

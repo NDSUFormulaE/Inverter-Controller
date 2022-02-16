@@ -31,12 +31,13 @@ uint16_t GPIOHandler::GetPedalSpeed()
     return map(potent_read, 0, 1023, SPEED_OFFSET + SPEED_MIN_RPM, SPEED_OFFSET + SPEED_MAX_RPM);;
 }
 
-uint8_t GPIOHandler::GetClearPin()
+uint16_t GPIOHandler::GetClearPin()
 {
-    if(analogRead(CLEAR_FAULT_GPIO) > 900 && ((millis() - last_clear) > CLEAR_INTERVAL_MILLIS))
+    uint16_t analogReadVal = analogRead(CLEAR_FAULT_GPIO);
+    if(analogReadVal > 900 && ((millis() - last_clear) > CLEAR_INTERVAL_MILLIS))
     {
         last_clear = millis();
-        return 1;
+        return analogReadVal;
     }
     return 0;
 }
