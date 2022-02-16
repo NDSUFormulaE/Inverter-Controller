@@ -38,7 +38,6 @@ TaskScheduler taskMan;
 GPIOHandler gpioMan;
 ManagerPointers ManPointer;
 
-
 // Imports
 extern struct CANVariables InverterState;
 
@@ -59,16 +58,16 @@ void setup()
         "ClearFaults",
         128,
         &ManPointer,
-        0,
+        8,
         NULL
     );
 
     xTaskCreate(
         TaskCANLoop,
         "CANLoop",
-        128,
+        256,
         &ManPointer,
-        0,
+        7,
         NULL
     );
 
@@ -77,7 +76,7 @@ void setup()
         "InverterStateMachineControl",
         128,
         &ManPointer,
-        0,
+        8,
         NULL
     );
 
@@ -93,26 +92,25 @@ void loop()
 void TaskClearFaults(void * pvParameters)
 {
     ManagerPointers ManPoint = *((ManagerPointers*)pvParameters);
-    TaskScheduler TaskSched = *(ManPoint.TaskPoint);
-    GPIOHandler GPIOHand = *(ManPoint.GPIOPoint);
+    // TaskScheduler TaskSched = *(ManPoint.TaskPoint);
+    // GPIOHandler GPIOHand = *(ManPoint.GPIOPoint);
     for (;;)
     {
-        if (GPIOHand.GetClearPin())
+        uint16_t ClearPinVal = ManPoint.GPIOPoint->GetClearPin(); 
+        if (ClearPinVal)
         {
-            TaskSched.ClearInverterFaults();
+            ManPoint.TaskPoint->ClearInverterFaults();
         }
-        vTaskDelay(5);
+        vTaskDelay(50); // 15ms x 50 = 750ms
     }
 }
 
 void TaskCANLoop(void * pvParameters)
 {
     ManagerPointers ManPoint = *((ManagerPointers*)pvParameters);
-    TaskScheduler TaskSched = *(ManPoint.TaskPoint);
-    GPIOHandler GPIOHand = *(ManPoint.GPIOPoint);
     for (;;)
     {
-        taskMan.UpdateSpeed(gpioMan.GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
+        taskMan.UpdateSpeed(ManPoint.GPIOPoint->GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
         taskMan.RunLoop();
         vTaskDelay(1);
     }
@@ -238,6 +236,6 @@ void TaskInverterStateMachineControl(void * pvParameters)
         {
             InitialState = false;
         }
-        vTaskDelay(2);
+        vTaskDelay(10); // 15ms * 10 = 150ms
     }
 }
