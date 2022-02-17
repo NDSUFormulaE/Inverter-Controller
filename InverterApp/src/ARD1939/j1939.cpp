@@ -1174,7 +1174,7 @@ void ARD1939::f12(uint8_t v90)
 #endif
 
 
-
+#if TRANSPORT_PROTOCOL == 1
 void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_MessageLen, uint8_t* CAN_DestAddr, uint8_t* CAN_SrcAddr, uint8_t* CAN_Priority){
 
   InverterState.Last_Message = CAN_Message;
@@ -1605,6 +1605,7 @@ void ARD1939::ClearFaults(void)
   ARD1939::Transmit(priority, DM3, ARD1939::GetSourceAddress(), 0xA2, &clear_data[0], 8);
   ARD1939::Transmit(priority, DM11, ARD1939::GetSourceAddress(), 0xA2, &clear_data[0], 8);
 }
+#endif
 
 bool ARD1939::CheckValidState(void)
 {

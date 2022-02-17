@@ -16,7 +16,7 @@
 // 0 - ARD1939-Uno
 // 1 - ARD1939-Uno/TP
 // 2 - ARD1939-Mega
-#define ARD1939VERSION                          1
+#define ARD1939VERSION                          0
 
 // J1939 Settings
 #if ARD1939VERSION == 0
@@ -38,7 +38,7 @@
 #endif
 
 #define SA_PREFERRED                      	0x03
-#define ADDRESSRANGEBOTTOM                	0x04
+#define ADDRESSRANGEBOTTOM                	0x02
 #define ADDRESSRANGETOP                   	247
 
 #define GLOBALADDRESS                    	255
@@ -107,8 +107,8 @@ struct FaultString
   uint32_t length;
 };
 
-enum {MAX_FAULTS = 25};
-enum {TP_BUFFER_LENGTH = 1785};
+enum {MAX_FAULTS = 0};
+enum {TP_BUFFER_LENGTH = 0};
 
 class ARD1939
 {
