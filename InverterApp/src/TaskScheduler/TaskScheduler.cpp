@@ -39,8 +39,8 @@ bool TaskScheduler::Init()
                 NAME_INDUSTRY_GROUP,
                 NAME_ARBITRARY_ADDRESS_CAPABLE);  
 
-    uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
-    TaskScheduler::SetupCANTask(0x06, COMMAND2_SPEED, 0x03, 0xA2, 8, 15, DefaultSpeedArray, INVERTER_CMD_MESSAGE_INDEX);
+    uint8_t DefaultPWMArray[8] = {0x66, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    TaskScheduler::SetupCANTask(0x06, COMMAND2_SPEED, 0x04, 0x03, 8, 40, DefaultPWMArray, PWM_MESSAGE_INDEX);
     return true;
 }
 
@@ -129,7 +129,7 @@ void TaskScheduler::RecieveMessages()
         //     Serial.print("\n\r");
         //     MsgId = J1939_MSG_NONE;
         // }
-        j1939.CANInterpret(&PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
+        //j1939.CANInterpret(&PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
     }
 }
 
@@ -185,32 +185,6 @@ void TaskScheduler::SetupCANTask(uint8_t priority, long PGN, uint8_t srcAddr, ui
     }
     CANTasks[index].initialized = true;
     CANTasks[index].lastRunTime = 0;
-}
-
-void TaskScheduler::EnableDriveMessage(void)
-{
-    /**
-    * Enables the Drive Message at INVERTER_CMD_MESSAGE_INDEX
-    * 
-    * Parameters:
-    *     none
-    * Returns:
-    *     none
-    **/
-    CANTasks[INVERTER_CMD_MESSAGE_INDEX].initialized = true;
-}
-
-void TaskScheduler::DisableDriveMessage(void)
-{
-    /**
-    * Disables the Drive Message at INVERTER_CMD_MESSAGE_INDEX
-    * 
-    * Parameters:
-    *     none
-    * Returns:
-    *     none
-    **/
-    CANTasks[INVERTER_CMD_MESSAGE_INDEX].initialized = false;
 }
 
 
@@ -413,29 +387,6 @@ void TaskScheduler::UpdateSpeed(int currentPedalSpeed, int speedMessageIndex)
 
     UpdateMsgByte(speedMessageIndex, currentPedalSpeed % 0x100 , 2);
     UpdateMsgByte(speedMessageIndex, currentPedalSpeed >> 8, 3);
-}
-
-void TaskScheduler::ClearInverterFaults(void)
-{
-    /**
-    * Clears Fault Table and sends DM3 && DM11 Messages.
-    * DM3: Clear of Previously Active Diagnostic Trouble Codes
-    * DM11: Clear of Active Diagnostic Trouble Codes
-    *
-    * Parameters:
-    *    none
-    * Returns:
-    *    none
-    **/
-    j1939.ClearFaults();
-    if(InverterState.MCU_State == MCU_FAULT_CLASSA)
-    {
-        TaskScheduler::ChangeState(FAULT_CLASSA_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
-    }else if(InverterState.MCU_State == MCU_FAULT_CLASSB)
-    {
-        TaskScheduler::ChangeState(FAULT_CLASSB_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
-    }
-    
 }
 
 //// Private Functions

@@ -5,8 +5,8 @@
 #include "../ARD1939/ARD1939.h"
 #include "../ARD1939/CAN_SPEC/PGN.h"
 
-enum {MAX_TASKS = 15};
-#define INVERTER_CMD_MESSAGE_INDEX 0
+enum {MAX_TASKS = 2};
+#define PWM_MESSAGE_INDEX 0
 
 struct CANTask
 {
