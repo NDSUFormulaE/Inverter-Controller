@@ -1,43 +1,52 @@
 #include "gpioHandler.h"
-#include "../TM1637/TM1637Display.h"
-uint16_t speed = 0;
-
 
 bool GPIOHandler::Init()
 {
-    // Configure all of our GPIOs
-    #ifdef DISPLAYS_ENABLED
-        // ALL OF OUR CODE
-        TM1637TinyDisplay speedDisplay(SPD_CLK, SPD_DATA), batteryDisplay(BATT_CLK,BATT_DATA), motorTempDisplay(TEMP_CLK,TEMP_DATA), coolantTempDisplay(COOL_CLK,COOL_DATA);
-        speedDisplay.setBrightness(7);
-        batteryDisplay.setBrightness(7);
-        coolantTempDisplay.setBrightness(7);
-        motorTempDisplay.setBrightness(7);
-        speedDisplay.showString("NDSU SAE");
-        speedDisplay.showNumber(00.00);
-        batteryDisplay.showNumber(000.0);
-        coolantTempDisplay.showNumber(000.0);
-        motorTempDisplay.showNumber(000.0);
-
-    #else
-        return true;
-    #endif
-}
-unsigned long last_clear = 0;
-
-uint16_t GPIOHandler::GetPedalSpeed()
-{
-    int potent_read = analogRead(POT_GPIO);
-    return map(potent_read, 0, 1023, SPEED_OFFSET + SPEED_MIN_RPM, SPEED_OFFSET + SPEED_MAX_RPM);;
+    pinMode(PWM_PINLOW, INPUT);
+    pinMode(PWM_PINHIGH, INPUT);
+    analogWrite(3, 80);
+    return true;
 }
 
-uint16_t GPIOHandler::GetClearPin()
+PWM_RETURN GPIOHandler::GetPWM()
 {
-    uint16_t analogReadVal = analogRead(CLEAR_FAULT_GPIO);
-    if(analogReadVal > 900 && ((millis() - last_clear) > CLEAR_INTERVAL_MILLIS))
+    // Initialize variables
+    float ontime, offtime, period;
+    uint8_t freq, duty;
+    PWM_RETURN pwm_to_return;
+
+    // Read lowside pin, decease timeout to 100ms
+    ontime = pulseIn(PWM_PINLOW,HIGH, 100000);
+    offtime = pulseIn(PWM_PINLOW,LOW, 100000);
+    period = ontime+offtime;
+    freq = 1000000.0/period;
+    duty = (ontime/period)*100;
+    if ((int)freq == 0)
     {
-        last_clear = millis();
-        return analogReadVal;
+        pwm_to_return.duty_cycle_low = 0;
+        pwm_to_return.freq_low = 0;
     }
-    return 0;
+    else
+    {
+        pwm_to_return.duty_cycle_low = duty;
+        pwm_to_return.freq_low = freq;
+    }
+
+    // Read highside pin, decease timeout to 100ms
+    ontime = pulseIn(PWM_PINHIGH,HIGH, 100000);
+    offtime = pulseIn(PWM_PINHIGH,LOW, 100000);
+    period = ontime+offtime;
+    freq = 1000000.0/period;
+    duty = (ontime/period)*100;
+    if ((int)freq == 0)
+    {
+        pwm_to_return.duty_cycle_high = 0;
+        pwm_to_return.freq_high = 0;
+    }
+    else
+    {
+        pwm_to_return.duty_cycle_high = duty;
+        pwm_to_return.freq_high = freq;
+    }
+    return pwm_to_return;
 }
