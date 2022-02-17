@@ -4,7 +4,6 @@ bool GPIOHandler::Init()
 {
     pinMode(PWM_PINLOW, INPUT);
     pinMode(PWM_PINHIGH, INPUT);
-    analogWrite(3, 80);
     return true;
 }
 
