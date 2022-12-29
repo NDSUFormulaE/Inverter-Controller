@@ -1339,6 +1339,12 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       unsigned long SPN = ((SPN_Top << 16) + (SPN_Mid << 8) + SPN_Bottom);
       uint8_t FMI = CAN_Message[4] & 0b11111;
       uint8_t Occ = CAN_Message[5] & 0b1111111;
+      // Serial.print("FAULT CAN 3: ");
+      // Serial.println(CAN_Message[3]);
+      // Serial.print("FAULT CAN 4: ");
+      // Serial.println(CAN_Message[4]);
+      // Serial.print("FAULT CAN 5: ");
+      // Serial.println(CAN_Message[5]);
       UpdateAddFault(SPN, FMI, Occ);
       break;
     }

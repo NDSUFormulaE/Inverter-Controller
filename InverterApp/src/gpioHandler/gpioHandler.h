@@ -8,7 +8,7 @@
 
 #define SPEED_OFFSET   32000
 #define SPEED_MIN_RPM      0
-#define SPEED_MAX_RPM    200
+#define SPEED_MAX_RPM    100
 
 #define CLEAR_INTERVAL_MILLIS 5000
 

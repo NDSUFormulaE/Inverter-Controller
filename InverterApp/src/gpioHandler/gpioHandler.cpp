@@ -34,7 +34,7 @@ uint16_t GPIOHandler::GetPedalSpeed()
 uint16_t GPIOHandler::GetClearPin()
 {
     uint16_t analogReadVal = analogRead(CLEAR_FAULT_GPIO);
-    if(analogReadVal > 900 && ((millis() - last_clear) > CLEAR_INTERVAL_MILLIS))
+    if(analogReadVal > 500 && ((millis() - last_clear) > CLEAR_INTERVAL_MILLIS))
     {
         last_clear = millis();
         return analogReadVal;
