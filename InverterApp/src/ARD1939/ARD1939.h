@@ -45,13 +45,13 @@
 #define NULLADDRESS                      	254
 
 // NAME Fields Default 
-#define NAME_IDENTITY_NUMBER              	0xFFFFFF
+#define NAME_IDENTITY_NUMBER              	0x000000
 #define NAME_MANUFACTURER_CODE            	0xFFF
 #define NAME_FUNCTION_INSTANCE            	0
-#define NAME_ECU_INSTANCE                 	0x01
-#define NAME_FUNCTION                     	0xFF
+#define NAME_ECU_INSTANCE                 	0x00
+#define NAME_FUNCTION                     	0x02
 #define NAME_RESERVED                     	0
-#define NAME_VEHICLE_SYSTEM               	0x7F
+#define NAME_VEHICLE_SYSTEM               	0x0
 #define NAME_VEHICLE_SYSTEM_INSTANCE      	0
 #define NAME_INDUSTRY_GROUP               	0x00
 #define NAME_ARBITRARY_ADDRESS_CAPABLE    	0x01

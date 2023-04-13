@@ -8,14 +8,17 @@
 
 #define SPEED_OFFSET   32000
 #define SPEED_MIN_RPM      0
-#define SPEED_MAX_RPM    200
+#define SPEED_MAX_RPM      750
+
+// 0% -> 0.7%
+#define TORQUE_OFFSET      32000
+#define TORQUE_PERC_MIN    0
+#define TORQUE_PERC_MAX    180
 
 #define CLEAR_INTERVAL_MILLIS 5000
 
 //If displays connected, uncomment next line.
-//#define DISPLAYS_ENABLED
-
-#define SPD_DISPLAY_CLK 0
+#define DISPLAYS_ENABLED
 
 // Speed Display Pins
 #define SPD_CLK 22
@@ -39,6 +42,8 @@ class GPIOHandler
         bool Init(void);
         uint16_t GetPedalSpeed();
         uint16_t GetClearPin();
+        uint16_t GetPedalTorque();
+        void UpdateDisplays();
     private:
         uint16_t speed;
 };

@@ -35,7 +35,7 @@ struct MsgReturn
 class TaskScheduler
 {
     public:
-        bool Init();
+        int Init();
         int AddCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8_t destAddr, int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN]);
         void RemoveCANTask(int taskIndex);
         MsgReturn GetMsg(int taskIndex);
