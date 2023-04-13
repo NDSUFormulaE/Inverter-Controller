@@ -39,6 +39,7 @@ int TaskScheduler::Init()
                   NAME_ARBITRARY_ADDRESS_CAPABLE);
 
     uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
+    uint8_t DefaultTorqueArray[] = {0xF4, 0x18, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
     TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0x03, 0xA2, 8, 15, DefaultSpeedArray, INVERTER_CMD_MESSAGE_INDEX);
     return 0;
 }
@@ -118,7 +119,8 @@ void TaskScheduler::RecieveMessages()
     }
     else if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_INPROGRESS)
     {
-        Serial.println("Address Claim In Progress");
+        // Serial.println("Address Claim In Progress");
+        InverterState.CAN_Bus_Status = ADDRESSCLAIM_FINISHED;
     }
     // J1939_MSG_APP means normal Data Packet && J1939_MSG_PROTOCOL means Transport Protocol Announcement.
     if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED && (MsgId == J1939_MSG_APP || MsgId == J1939_MSG_PROTOCOL))
