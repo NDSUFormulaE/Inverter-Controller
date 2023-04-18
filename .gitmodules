@@ -1,3 +1,6 @@
 [submodule "ARD1939/CAN_SPEC"]
 	path = InverterApp/src/ARD1939/CAN_SPEC
 	url = git@github.com:NDSUFormulaE/CAN_SPEC.git
+[submodule "InverterApp/src/TM1637TinyDisplay"]
+	path = InverterApp/src/TM1637TinyDisplay
+	url = git@github.com:jasonacox/TM1637TinyDisplay.git
