@@ -46,4 +46,6 @@ class GPIOHandler
         void UpdateDisplays();
     private:
         uint16_t speed;
+        bool LcdInit();
+        void LCDDisplaySAE();
 };

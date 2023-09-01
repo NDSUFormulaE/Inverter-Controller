@@ -1205,13 +1205,13 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
     case STATUS1_RELTORQUE_SPEED:
     {
       // STATUS1_RELTORQUE_SPEED
-      if(CAN_Message[0] == 0x79 && CAN_Message[1] == 0xFF){
+      if(CAN_Message[0] == 0x79){
         InverterState.Avg_Torque_Percent = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.00390625) - 125.0;
         // Check if these machine speeds are different
         InverterState.Rel_Machine_Speed = ((CAN_Message[4] + (CAN_Message[5] << 8)) * 0.5) - 16000.0;        // Units: RPM
       }
       // STATUS2_STATE_VOLTAGE
-      else if(CAN_Message[0] == 0x77 && CAN_Message[1] == 0xFF){
+      else if(CAN_Message[0] == 0x77){
         InverterState.MCU_State = CAN_Message[2];
         InverterState.DC_Bus_Voltage = (CAN_Message[3] + (CAN_Message[4] << 8)) * 0.03125;                   // Units: Volts
         InverterState.Derate_Owner = CAN_Message[5];

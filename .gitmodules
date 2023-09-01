@@ -3,4 +3,4 @@
 	url = git@github.com:NDSUFormulaE/CAN_SPEC.git
 [submodule "InverterApp/src/TM1637TinyDisplay"]
 	path = InverterApp/src/TM1637TinyDisplay
-	url = git@github.com:jasonacox/TM1637TinyDisplay.git
+	url = git@github.com:NDSUFormulaE/TM1637TinyDisplay.git

@@ -117,7 +117,7 @@ void TaskUpdateScreens(void * pvParameters)
     {
         // Serial.println("Updating Displays");
         gpioMan.UpdateDisplays();
-        vTaskDelay(2); // 15ms x 50 = 750ms
+        vTaskDelay(10); // 15ms x 50 = 750ms
     }
 }
 
@@ -155,7 +155,6 @@ void TaskInverterStateMachineControl(void * pvParameters)
                     if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
                     {
                         Serial.println("Inverter in Standby State");
-                        Serial.println("Inverter in Functional Diagnostics State");
                     }
                     
                     taskMan.ChangeState(STDBY_TO_FUNCTIONAL_DIAG, INVERTER_CMD_MESSAGE_INDEX);
