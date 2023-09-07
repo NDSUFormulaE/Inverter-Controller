@@ -3,12 +3,12 @@
 #include <Arduino.h>
 #include "../TaskScheduler/TaskScheduler.h"
 
-#define POT_GPIO           2
+#define POT_GPIO           A2
 #define CLEAR_FAULT_GPIO   A5
 
-#define SPEED_OFFSET   32000
+#define SPEED_OFFSET   16000
 #define SPEED_MIN_RPM      0
-#define SPEED_MAX_RPM      750
+#define SPEED_MAX_RPM      350
 
 // 0% -> 0.7%
 #define TORQUE_OFFSET      32000
@@ -48,4 +48,5 @@ class GPIOHandler
         uint16_t speed;
         bool LcdInit();
         void LCDDisplaySAE();
+        void LcdUpdate();
 };

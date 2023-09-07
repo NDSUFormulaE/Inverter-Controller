@@ -42,10 +42,11 @@ double randomDouble(double minf, double maxf)
 
 void GPIOHandler::UpdateDisplays()
 {
-    speedDisplay.showNumber(InverterState.Abs_Machine_Speed);
+    speedDisplay.showNumber(int(InverterState.Abs_Machine_Speed));
     batteryDisplay.showNumber(InverterState.DC_Bus_Voltage);
-    motorTempDisplay.showNumber(InverterState.Motor_Temp_1);
+    motorTempDisplay.showNumber(int((InverterState.Motor_Temp_1 + InverterState.Motor_Temp_2 + InverterState.Motor_Temp_3)/3));
     coolantTempDisplay.showNumber(InverterState.Inverter_Coolant_Temp);
+    LcdUpdate();
 }
 
 bool GPIOHandler::LcdInit()
@@ -53,6 +54,11 @@ bool GPIOHandler::LcdInit()
   //Initialized screen and backlight.
   lcd.init();
   lcd.backlight();
+}
+
+void GPIOHandler::LcdUpdate()
+{
+
 }
 
 void GPIOHandler::LCDDisplaySAE()
@@ -86,7 +92,7 @@ void GPIOHandler::LCDDisplaySAE()
 uint16_t GPIOHandler::GetPedalSpeed()
 {
     int potent_read = analogRead(POT_GPIO);
-    return map(potent_read, 0, 1023, SPEED_OFFSET + SPEED_MIN_RPM, SPEED_OFFSET + SPEED_MAX_RPM);;
+    return map(potent_read, 0, 1023, long((SPEED_MIN_RPM + SPEED_OFFSET) * 2), long((SPEED_MAX_RPM + SPEED_OFFSET) * 2));
 }
 
 uint16_t GPIOHandler::GetPedalTorque()

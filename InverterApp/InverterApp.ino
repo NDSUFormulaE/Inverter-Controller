@@ -115,7 +115,6 @@ void TaskUpdateScreens(void * pvParameters)
     (void) pvParameters;
     for (;;)
     {
-        // Serial.println("Updating Displays");
         gpioMan.UpdateDisplays();
         vTaskDelay(10); // 15ms x 50 = 750ms
     }
