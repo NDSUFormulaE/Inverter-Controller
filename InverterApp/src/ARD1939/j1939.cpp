@@ -1248,19 +1248,19 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
     case STATUS3_ABSTORQUE_SPEED:
     {
       // STATUS3_ABSTORQUE_SPEED
-      if(CAN_Message[0] == 0x00 && CAN_Message[0] == 0x51){
+      if(CAN_Message[0] == 0x00 && CAN_Message[1] == 0x51){
         InverterState.Avg_Abs_Torque = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.1) - 3200.0;            // Units: Nm
         // Check if these machine speeds are different
         InverterState.Abs_Machine_Speed = ((CAN_Message[4] + (CAN_Message[5] << 8)) * 0.5) - 16000.0;        // Units: RPM
       }
       // DC_LINK_PWR_STATUS
-      else if(CAN_Message[0] == 0x00 && CAN_Message[0] == 0x56){
+      else if(CAN_Message[0] == 0x00 && CAN_Message[1] == 0x56){
         InverterState.Actual_Power = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.001) - 32.0;
         InverterState.Max_Power_Generating = (CAN_Message[4] + (CAN_Message[5] << 8)) * 0.001;
         InverterState.Max_Power_Motoring = (CAN_Message[6] + (CAN_Message[7] << 8)) * 0.001;
       }
       // VOLTAGE_RMS1
-      else if(CAN_Message[0] == 0x00 && CAN_Message[0] == 0x54){
+      else if(CAN_Message[0] == 0x00 && CAN_Message[1] == 0x54){
         InverterState.RMS_Voltage_Phase_A = (CAN_Message[2] + (CAN_Message[3] << 8)) * 0.03125;               // Units: Amps
         InverterState.RMS_Voltage_Phase_B = (CAN_Message[4] + (CAN_Message[5] << 8)) * 0.03125;               // Units: Amps
         InverterState.RMS_Voltage_Phase_C = (CAN_Message[6] + (CAN_Message[7] << 8)) * 0.03125;               // Units: Amps
@@ -1272,7 +1272,7 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
     case STATUS4_TORQUE_PWRSTAGE_OVRLD:
     {
       // STATUS4_TORQUE_PWRSTAGE_OVRLD
-      if(CAN_Message[0] == 0x32 && CAN_Message[0] == 0xFF){
+      if(CAN_Message[0] == 0x32){
       InverterState.Neg_Torque_Available = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.1) - 3200.0;        // Units: Nm
       InverterState.Pos_Torque_Available = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.1) - 3200.0;        // Units: Nm
       // Power Stage Status Values
@@ -1294,13 +1294,13 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
         InverterState.Brake_Chopper_IGBT_Temp = CAN_Message[7] - 40;                                   // Units: Degrees Celcius
       }
       // AC_SUPPLY_STATUS
-      else if(CAN_Message[0] == 0x31 && CAN_Message[0] == 0xFF){
+      else if(CAN_Message[0] == 0x31){
         InverterState.AC_Voltage_Output = CAN_Message[2] + (CAN_Message[3] << 8);                         // Units: Vrms
         InverterState.AC_Frequency = CAN_Message[4] + (CAN_Message[5] << 8);                              // Units: Hz
         InverterState.AC_Voltage_Desired = CAN_Message[6] + (CAN_Message[7] << 8);                        // Units: Vrms
       }
       // DC_LINK_PWR_CURRENT_STATUS
-      else if(CAN_Message[0] == 0x36 && CAN_Message[0] == 0xFF){
+      else if(CAN_Message[0] == 0x36){
         InverterState.Actual_Current = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.001) - 32.0;
         InverterState.Max_Current_Generating = (CAN_Message[4] + (CAN_Message[5] << 8)) * 0.001;
         InverterState.Max_Current_Motoring = (CAN_Message[6] + (CAN_Message[7] << 8)) * 0.001;
