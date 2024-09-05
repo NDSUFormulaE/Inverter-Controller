@@ -46,19 +46,37 @@ void GPIOHandler::UpdateDisplays()
     batteryDisplay.showNumber(InverterState.DC_Bus_Voltage);
     motorTempDisplay.showNumber(int((InverterState.Motor_Temp_1 + InverterState.Motor_Temp_2 + InverterState.Motor_Temp_3)/3));
     coolantTempDisplay.showNumber(InverterState.Inverter_Coolant_Temp);
-    LcdUpdate();
+    // LcdUpdate();
 }
 
 bool GPIOHandler::LcdInit()
 {
   //Initialized screen and backlight.
   lcd.init();
+  lcd.clear();
   lcd.backlight();
 }
 
-void GPIOHandler::LcdUpdate()
+void GPIOHandler::LcdUpdateState(char* str_to_print)
 {
-
+  lcd.setCursor(0,0);
+  // lcd.print("STATE:Norm Operation");
+  lcd.print(str_to_print);
+}
+void GPIOHandler::LcdUpdateError1(char* str_to_print)
+{
+  lcd.setCursor(1,0);
+  lcd.print(str_to_print);
+}
+void GPIOHandler::LcdUpdateError2(char* str_to_print)
+{
+  lcd.setCursor(2,0);
+  lcd.print(str_to_print);
+}
+void GPIOHandler::LcdUpdateError3(char* str_to_print)
+{
+  lcd.setCursor(3,0);
+  lcd.print(str_to_print);
 }
 
 void GPIOHandler::LCDDisplaySAE()

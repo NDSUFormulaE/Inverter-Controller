@@ -7,6 +7,8 @@
 #include "ARD1939.h"
 #include "Arduino.h"
 
+#include "../gpioHandler/gpioHandler.h"
+
 #define d49                             10
 
 #define d50                              8
@@ -92,7 +94,7 @@ struct v06 v18;
   #define d01        0
   #define d02          1
   #define d03          2
-  
+
   struct v19
   {
     uint8_t v20;
@@ -111,17 +113,17 @@ struct v06 v18;
   };
   v19 v33;
   v19 v34;
-  
+
   #define d04            32
   #define d05            16
   #define d06            17
   #define d07    19
   #define d08        255
-  
+
   #define d09        1
   #define d10    2
   #define d11     3
-  
+
   #define d12	       0
   #define d13      1
 
@@ -135,7 +137,7 @@ struct v35 v39;
 #if TRANSPORT_PROTOCOL == 1
   struct v35 v40;
   struct v35 v41;
-  
+
   struct v35 v42;
   struct v35 v43;
   struct v35 v44;
@@ -151,7 +153,7 @@ int v50;
 #if TRANSPORT_PROTOCOL == 1
   int v51;
   int v52;
-  
+
   int v53;
   int v54;
   int v55;
@@ -167,8 +169,8 @@ int v50;
 #if TRANSPORT_PROTOCOL == 1
   #define d16	50
   #define d17	750
-  
-  #define d18     50      
+
+  #define d18     50
   #define d19		200
   #define d20		500
   #define d21	750
@@ -222,9 +224,9 @@ uint8_t ARD1939::Init(int v80)
   for(v65 = 0; v65 < MSGFILTERS; v65++)
   {
     v02[v65].bActive = false;
-    v02[v65].v25 = 0;    
+    v02[v65].v25 = 0;
   }
-  
+
 #if TRANSPORT_PROTOCOL == 1
   v51 = d16 / v80;
   v52 = d17 / v80;
@@ -240,7 +242,7 @@ uint8_t ARD1939::Init(int v80)
   f11(d12);
   f12(d12);
 #endif
-    
+
   v64 = 0;
   return canInit();
 }
@@ -288,33 +290,33 @@ uint8_t ARD1939::Operate(uint8_t* v70, long* v25, uint8_t* v71, int* v31, uint8_
           }
         }
         break;
-      
+
       case d29:
         if(*v66 == v18.v17)
         {
           v82 = f03(&v71[0], &v03[0]);
           switch(v82)
           {
-            case 0:      
-#if TRANSPORT_PROTOCOL == 1          
+            case 0:
+#if TRANSPORT_PROTOCOL == 1
               f11(d12);
               f12(d12);
-#endif           
+#endif
               Transmit(d28, d29, NULLADDRESS, GLOBALADDRESS, &v03[0], 8);
               v18.v08 = false;
               v18.v11 = true;
               v68 = ADDRESSCLAIM_FAILED;
-              break;             
-            case 1:     
-#if TRANSPORT_PROTOCOL == 1           
+              break;
+            case 1:
+#if TRANSPORT_PROTOCOL == 1
               f11(d12);
               f12(d12);
-#endif           
+#endif
               v18.v07 = false;
               v18.v08 = false;
               f01(*v66, &v03[0]);
-              break;          
-            case 2:  
+              break;
+            case 2:
               Transmit(d28, d29, v18.v17,
                             GLOBALADDRESS, &v03[0], 8);
               break;
@@ -324,7 +326,7 @@ uint8_t ARD1939::Operate(uint8_t* v70, long* v25, uint8_t* v71, int* v31, uint8_
       case d34:
         break;
     }
-    
+
 #if TRANSPORT_PROTOCOL == 1
     f13(*v25, v71, *v31, *v67, *v66, *v76);
     if(*v70 == J1939_MSG_NONE)
@@ -456,7 +458,7 @@ uint8_t ARD1939::f01(uint8_t v16, uint8_t* v91)
           {
             v18.v08 = false;
             v18.v11 = true;
-            v68 = ADDRESSCLAIM_FAILED;            
+            v68 = ADDRESSCLAIM_FAILED;
           }
           else
           {
@@ -476,21 +478,21 @@ uint8_t ARD1939::f01(uint8_t v16, uint8_t* v91)
           switch(v82)
           {
             case 0:
-#if TRANSPORT_PROTOCOL == 1            
+#if TRANSPORT_PROTOCOL == 1
               f11(d12);
               f12(d12);
-#endif           
+#endif
               Transmit(d28, d29, NULLADDRESS, GLOBALADDRESS, &v03[0], 8);
               v18.v08 = false;
               v18.v11 = true;
               v68 = ADDRESSCLAIM_FAILED;
-              break;       
-            
+              break;
+
               case 1:
-#if TRANSPORT_PROTOCOL == 1         
+#if TRANSPORT_PROTOCOL == 1
               f11(d12);
               f12(d12);
-#endif           
+#endif
               if(f02() == true)
               {
                 Transmit(d28, d29, v18.v16, GLOBALADDRESS,
@@ -571,7 +573,7 @@ uint8_t ARD1939::f03(uint8_t* v92, uint8_t* v93)
   for(v65 = 8; v65 > 0; v65--)
   {
     if(v92[v65-1] != v93[v65-1])
-    {      
+    {
       if(v92[v65-1] < v93[v65-1])
         return 1;
       else
@@ -706,7 +708,7 @@ bool ARD1939::f07(long* v25, uint8_t* v83)
           v69 = true;
       }
       break;
-  
+
     default:
       for(v65 = 0; v65 < v04 - 1; v65++)
       {
@@ -840,7 +842,7 @@ uint8_t ARD1939::f13(long v25, uint8_t* v71, int v31, uint8_t v67, uint8_t v66, 
         v62[7] = (uint8_t)(v33.v25 >> 16);
         v94 = Transmit(d38, d36, v33.v26, GLOBALADDRESS, &v62[0], 8);
         v40.v36 = v51;
-        v40.v21 = true;        
+        v40.v21 = true;
         v33.v22 = true;
       }
       else
@@ -859,15 +861,15 @@ uint8_t ARD1939::f13(long v25, uint8_t* v71, int v31, uint8_t v67, uint8_t v66, 
           else
           {
             v40.v36 = v51;
-            v40.v21 = true;      
-            v40.v37 = false;  
+            v40.v21 = true;
+            v40.v37 = false;
           }
         }
       }
   }
   if(v25 == d36 && v71[0] == d04 && v33.v20 == d01
   && v33.v32 == false)
-  {    
+  {
       v33.v25 = (((long)v71[7]) << 16) + (((long)v71[6]) << 8) + (long)v71[5];
       if(f09(v33.v25) == true)
       {
@@ -888,7 +890,7 @@ uint8_t ARD1939::f13(long v25, uint8_t* v71, int v31, uint8_t v67, uint8_t v66, 
           v41.v21 = true;
         }
        }
-      else 
+      else
         v33.v25 = 0;
   }
   if(v33.v20 == d02 && v41.v37 == true)
@@ -913,7 +915,7 @@ uint8_t ARD1939::f13(long v25, uint8_t* v71, int v31, uint8_t v67, uint8_t v66, 
   {
     f12(d12);
   }
-  
+
   if(v34.v20 == d03 && v34.v21 == true
   && v25 == d36 && v71[0] == d07)
   {
@@ -933,7 +935,7 @@ uint8_t ARD1939::f13(long v25, uint8_t* v71, int v31, uint8_t v67, uint8_t v66, 
         v62[7] = (uint8_t)(v34.v25 >> 16);
         v94 = Transmit(d38, d36, v34.v26, v34.v27, &v62[0], 8);
         v43.v36 = v54;
-        v43.v21 = true;        
+        v43.v21 = true;
         v34.v23 = true;
       }
       else
@@ -955,7 +957,7 @@ uint8_t ARD1939::f13(long v25, uint8_t* v71, int v31, uint8_t v67, uint8_t v66, 
         {
           f06(&v43);
           v42.v36 = v53;
-          v42.v21 = true;        
+          v42.v21 = true;
           v34.v24 = true;
         }
         if(v34.v24 == true && v42.v37 == true)
@@ -974,8 +976,8 @@ uint8_t ARD1939::f13(long v25, uint8_t* v71, int v31, uint8_t v67, uint8_t v66, 
           else
           {
             v42.v36 = v51;
-            v42.v21 = true;      
-            v42.v37 = false;  
+            v42.v21 = true;
+            v42.v37 = false;
           }
         }
         if(v47.v37 == true)
@@ -1028,15 +1030,15 @@ uint8_t ARD1939::f13(long v25, uint8_t* v71, int v31, uint8_t v67, uint8_t v66, 
         for(v65 = 0; v65 < 8; v65++)
           v62[v65] = v71[v65];
         v62[0] = d06;
-        v62[1] = v62[3];    
-        v62[2] = 1;              
-        v62[3] = 0xFF;          
+        v62[1] = v62[3];
+        v62[2] = 1;
+        v62[3] = 0xFF;
         v94 = Transmit(d38, d36, v67, v66, &v62[0], 8);
         v45.v36 = v56;
         v45.v21 = true;
       }
       else
-      {       
+      {
         v62[0] = d08;
         v62[1] = d10;
         v62[2] = 0xFF;
@@ -1072,8 +1074,8 @@ uint8_t ARD1939::f13(long v25, uint8_t* v71, int v31, uint8_t v67, uint8_t v66, 
         if(++v34.v29 == v34.v28)
         {
           v62[0] = d07;
-          v62[1] = (uint8_t)(v34.v31 & 0x00FF);         
-          v62[2] = (uint8_t)((v34.v31 & 0x00FF) >> 8);   
+          v62[1] = (uint8_t)(v34.v31 & 0x00FF);
+          v62[2] = (uint8_t)((v34.v31 & 0x00FF) >> 8);
           v62[3] = v34.v28;
           v62[4] = 0xFF;
           v62[5] = (uint8_t)(v34.v25 & 0x0000FF);
@@ -1091,12 +1093,12 @@ uint8_t ARD1939::f13(long v25, uint8_t* v71, int v31, uint8_t v67, uint8_t v66, 
 uint8_t ARD1939::f10(uint8_t v76, long v25, uint8_t v17, uint8_t v67ess, uint8_t* v79, int v77)
 {
   uint8_t v68;
-  int v65;    
+  int v65;
   struct v19* v89;
   v68 = OK;
   if(v67ess != GLOBALADDRESS)
     v89 = &v34;
-  else 
+  else
     v89 = &v33;
   if(v89->v20 != d01 || v77 > J1939_MSGLEN)
     v68 = ERR;
@@ -1160,7 +1162,7 @@ void ARD1939::f12(uint8_t v90)
 		v34.v28 = 0;
 		v34.v29 = 0;
 		v34.v31 = 0;
-		v34.v32 = false;	
+		v34.v32 = false;
 	}
 	f06(&v42);
 	f06(&v43);
@@ -1235,7 +1237,7 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       // PROGNOSTIC3_DIAGNOSTIC
       else if(CAN_Message[0] == 0xF8){
         InverterState.Machine_Speed_200ms_Avg = ((CAN_Message[1] + (CAN_Message[2] << 8)) * 0.5) - 16000.0;  // Units: RPM
-        InverterState.Mach_Torq_Percent_200ms_Avg = ((CAN_Message[3] + (CAN_Message[4] << 8)) * 0.00390625) - 16000.0; 
+        InverterState.Mach_Torq_Percent_200ms_Avg = ((CAN_Message[3] + (CAN_Message[4] << 8)) * 0.00390625) - 16000.0;
       // PROGNOSTIC5_POSITION
       }
       else if(CAN_Message[0] == 0x81){
@@ -1345,7 +1347,9 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       // Serial.println(CAN_Message[4]);
       // Serial.print("FAULT CAN 5: ");
       // Serial.println(CAN_Message[5]);
-      UpdateAddFault(SPN, FMI, Occ);
+
+      //need solution for GPIO Man
+      //UpdateAddFault(SPN, FMI, Occ);
       break;
     }
 
@@ -1367,7 +1371,7 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
           TP_Buffer[i] = 0xFF;
         }
       }
-      // Serial.print("TP_BAM Recieved PGN: "); 
+      // Serial.print("TP_BAM Recieved PGN: ");
       // Serial.print(TP_PGN);
       // Serial.print(" Num_Bytes: ");
       // Serial.println(TP_Num_Bytes);
@@ -1395,7 +1399,7 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
 bool ARD1939::TPMessageRecived(uint8_t num_packets)
   /**
   * Verifies all packets in a TP message have been recieved.
-  * 
+  *
   * Parameters:
   *     num_packets (uint8_t): The number of packets in the transport
   *                            protocol message
@@ -1417,7 +1421,7 @@ void ARD1939::DecodeTransportProtocol()
 {
     /**
     * Reads through the message stored in TP_Buffer and adds active faults to the fault table.
-    * 
+    *
     * Parameters:
     *     none
     * Returns:
@@ -1443,16 +1447,18 @@ void ARD1939::DecodeTransportProtocol()
       unsigned long SPN = ((TP_SPN_Top << 16) + (TP_SPN_Mid << 8) + TP_SPN_Bottom);
       uint8_t FMI = TP_Buffer[(4*i) + 4] & 0b11111;
       uint8_t Occ = TP_Buffer[(4*i) + 5] & 0b1111111;
-      UpdateAddFault(SPN, FMI, Occ);
+
+      //need solution for GPIO Man
+      //UpdateAddFault(SPN, FMI, Occ);
     }
-  } 
+  }
 }
 
 int ARD1939::FirstFreeInFaultArray()
 {
     /**
     * Iterates over the FaultTable array until it finds the first open spot in the array.
-    * 
+    *
     * Parameters:
     *     none
     * Returns:
@@ -1472,7 +1478,7 @@ bool ARD1939::isFaultTableClear()
 {
     /**
     * Iterates over the FaultTable array and checks if all faults are inactive.
-    * 
+    *
     * Parameters:
     *     none
     * Returns:
@@ -1493,7 +1499,7 @@ int ARD1939::isFaultInArray(unsigned long SPN, uint8_t FMI)
     /**
     * Iterates over the FaultTable array and checks if active fault
     * matching SPN and FMI in the is in the array
-    * 
+    *
     * Parameters:
     *     SPN       (uint16_t): Suspect Parameter Number of Fault
     *     FMI        (uint8_t): Failure mode identifier
@@ -1519,7 +1525,7 @@ int ARD1939::AddNewFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
     * Parameters:
     *     SPN       (uint16_t): Suspect Parameter Number of Fault
     *     FMI        (uint8_t): Failure mode identifier
-    *     OC         (uint8_t): Number of fault occurances 
+    *     OC         (uint8_t): Number of fault occurances
     *     CM         (uint8_t): SPN conversion method
     * Returns:
     *     firstFree      (int): Index of the newly added FaultEntry
@@ -1535,7 +1541,7 @@ int ARD1939::AddNewFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
     return firstFree;
 }
 
-int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
+int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance, GPIOHandler gpioMan)
 {
     /**
     * Configure a new FaultEntry in array, if it already exists update the occurance.
@@ -1543,13 +1549,13 @@ int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
     * Parameters:
     *     SPN       (uint16_t): Suspect Parameter Number of Fault
     *     FMI        (uint8_t): Failure mode identifier
-    *     OC         (uint8_t): Number of fault occurances 
+    *     OC         (uint8_t): Number of fault occurances
     *     CM         (uint8_t): SPN conversion method
     * Returns:
     *     firstFree      (int): Index of the newly added FaultEntry
     **/
     int faultIndex = isFaultInArray(SPN, FMI);
-    char sString[30];
+    char sString[21];
     if(faultIndex > -1)
     {
         if(FaultTable[faultIndex].OC < Occurance)
@@ -1562,18 +1568,17 @@ int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
           Serial.print(FMI);
           Serial.print(" Occ: ");
           Serial.println(Occurance);
-        } 
+        }
     }
     else
     {
         AddNewFault(SPN, FMI, Occurance);
-        Serial.print("FAULT NEW - SPN: ");
-        sprintf(sString, "%lu ", SPN);
-        Serial.print(sString);
-        Serial.print(" FMI: ");
-        Serial.print(FMI);
-        Serial.print(" Occ: ");
-        Serial.println(Occurance);
+        // Serial.print("FAULT NEW - SPN: ");
+        sprintf(sString, "FMI: %u Occ: %u", FMI, Occurance);
+        gpioMan.LcdUpdateError1(sString);
+        
+        // TODO: Add new function to print to display sString
+        // Serial.print(sString);
     }
     return faultIndex;
 }
@@ -1623,9 +1628,9 @@ bool ARD1939::CheckValidState(void)
     *     (bool): true if in a valid state, else false.
     **/
   switch(InverterState.MCU_State){
-    case MCU_STDBY: 
-    case MCU_IGNIT_READY: 
-    case MCU_PWR_READY: 
+    case MCU_STDBY:
+    case MCU_IGNIT_READY:
+    case MCU_PWR_READY:
     case MCU_DRIVE_READY:
     case MCU_NORM_OPS: return true; break;
     default: return false; break;

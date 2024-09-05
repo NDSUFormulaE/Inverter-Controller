@@ -36,17 +36,4 @@
 #define COOL_CLK 34
 #define COOL_DATA 36
 
-class GPIOHandler
-{
-    public:
-        bool Init(void);
-        uint16_t GetPedalSpeed();
-        uint16_t GetClearPin();
-        uint16_t GetPedalTorque();
-        void UpdateDisplays();
-    private:
-        uint16_t speed;
-        bool LcdInit();
-        void LCDDisplaySAE();
-        void LcdUpdate();
-};
+#include "gpioHandlerMin.h"
