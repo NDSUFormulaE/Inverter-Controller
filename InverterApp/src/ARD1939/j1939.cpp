@@ -7,7 +7,7 @@
 #include "ARD1939.h"
 #include "Arduino.h"
 
-#include "../gpioHandler/gpioHandler.h"
+//#include "../gpioHandler/gpioHandler.h"
 
 #define d49                             10
 
@@ -1349,7 +1349,7 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       // Serial.println(CAN_Message[5]);
 
       //need solution for GPIO Man
-      //UpdateAddFault(SPN, FMI, Occ);
+      UpdateAddFault(SPN, FMI, Occ);
       break;
     }
 
@@ -1449,7 +1449,7 @@ void ARD1939::DecodeTransportProtocol()
       uint8_t Occ = TP_Buffer[(4*i) + 5] & 0b1111111;
 
       //need solution for GPIO Man
-      //UpdateAddFault(SPN, FMI, Occ);
+      UpdateAddFault(SPN, FMI, Occ);
     }
   }
 }
@@ -1541,7 +1541,7 @@ int ARD1939::AddNewFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
     return firstFree;
 }
 
-int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance, GPIOHandler gpioMan)
+int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance) //,GPIOHandler gpioMan
 {
     /**
     * Configure a new FaultEntry in array, if it already exists update the occurance.
@@ -1575,7 +1575,7 @@ int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance, G
         AddNewFault(SPN, FMI, Occurance);
         // Serial.print("FAULT NEW - SPN: ");
         sprintf(sString, "FMI: %u Occ: %u", FMI, Occurance);
-        gpioMan.LcdUpdateError1(sString);
+        //gpioMan.LcdUpdateError1(sString);
         
         // TODO: Add new function to print to display sString
         // Serial.print(sString);
