@@ -107,16 +107,22 @@ void GPIOHandler::LCDDisplaySAE()
   }
 }
 
+uint16_t mapToRange(uint16_t x, uint16_t in_min, uint16_t in_max, uint16_t out_min, uint16_t out_max) {
+  return (uint16_t)(((long)x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min);
+}
+
 uint16_t GPIOHandler::GetPedalSpeed()
 {
-    int potent_read = analogRead(POT_GPIO);
-    return map(potent_read, 0, 1023, long((SPEED_MIN_RPM + SPEED_OFFSET) * 2), long((SPEED_MAX_RPM + SPEED_OFFSET) * 2));
+  int potent_read = analogRead(POT_GPIO);
+  uint16_t mapped_val = mapToRange(potent_read, 0, 1023, MIN_SPEED_VAL, MAX_SPEED_VAL);
+  return mapped_val;
 }
 
 uint16_t GPIOHandler::GetPedalTorque()
 {
-    int potent_read = analogRead(POT_GPIO);
-    return map(potent_read, 0, 1023, TORQUE_OFFSET + TORQUE_PERC_MIN, TORQUE_OFFSET + TORQUE_PERC_MAX);;
+  int potent_read = analogRead(POT_GPIO);
+  uint16_t mapped_val = map(potent_read, 0, 1023, MIN_TORQUE_VAL, MAX_TORQUE_VAL);
+  return mapped_val;
 }
 
 uint16_t GPIOHandler::GetClearPin()
