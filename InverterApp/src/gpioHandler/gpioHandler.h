@@ -3,17 +3,23 @@
 #include <Arduino.h>
 #include "../TaskScheduler/TaskScheduler.h"
 
-#define POT_GPIO           A2
+#define POT_GPIO           A1
 #define CLEAR_FAULT_GPIO   A5
 
 #define SPEED_OFFSET   16000
 #define SPEED_MIN_RPM      0
-#define SPEED_MAX_RPM      350
+#define SPEED_MAX_RPM      600
+
+#define MIN_SPEED_VAL (SPEED_OFFSET + SPEED_MIN_RPM) * 2
+#define MAX_SPEED_VAL (SPEED_OFFSET + SPEED_MAX_RPM) * 2
 
 // 0% -> 0.7%
-#define TORQUE_OFFSET      32000
+#define TORQUE_OFFSET      16000
 #define TORQUE_PERC_MIN    0
-#define TORQUE_PERC_MAX    180
+#define TORQUE_PERC_MAX    15
+
+#define MIN_TORQUE_VAL (TORQUE_OFFSET + TORQUE_PERC_MIN) * 2
+#define MAX_TORQUE_VAL (TORQUE_OFFSET + TORQUE_PERC_MAX) * 2
 
 #define CLEAR_INTERVAL_MILLIS 5000
 

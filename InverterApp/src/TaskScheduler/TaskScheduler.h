@@ -44,7 +44,7 @@ class TaskScheduler
         void RunLoop();
         uint8_t GetSourceAddress();
         bool ChangeState(int StateTransition, int speedMessageIndex);
-        void UpdateSpeed(int CurrentPedalSpeed, int speedMessageIndex);
+        void UpdateSpeed(uint16_t CurrentPedalSpeed, int speedMessageIndex);
         void EnableDriveMessage(void);
         void DisableDriveMessage(void);
         void ClearInverterFaults(void);

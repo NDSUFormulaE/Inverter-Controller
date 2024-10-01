@@ -1251,7 +1251,8 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       if(CAN_Message[0] == 0x00 && CAN_Message[1] == 0x51){
         InverterState.Avg_Abs_Torque = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.1) - 3200.0;            // Units: Nm
         // Check if these machine speeds are different
-        InverterState.Abs_Machine_Speed = ((CAN_Message[4] + (CAN_Message[5] << 8)) * 0.5) - 16000.0;        // Units: RPM
+        InverterState.Abs_Machine_Speed = (float)((long)(CAN_Message[4] + (CAN_Message[5] << 8)) / 2.0) - 16000.0;
+        // Units: RPM
       }
       // DC_LINK_PWR_STATUS
       else if(CAN_Message[0] == 0x00 && CAN_Message[1] == 0x56){
