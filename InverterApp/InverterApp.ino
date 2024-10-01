@@ -126,7 +126,7 @@ void TaskCANLoop(void * pvParameters)
     for (;;)
     {
         taskMan.UpdateSpeed(gpioMan.GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
-        //taskMan.UpdateSpeed(gpioMan.GetPedalTorque(), INVERTER_CMD_MESSAGE_INDEX);
+        // taskMan.UpdateSpeed(gpioMan.GetPedalTorque(), INVERTER_CMD_MESSAGE_INDEX);
         taskMan.RunLoop();
         vTaskDelay(1);
     }

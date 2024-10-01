@@ -436,7 +436,7 @@ bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
     return true;
 }
 
-void TaskScheduler::UpdateSpeed(int currentPedalSpeed, int speedMessageIndex)
+void TaskScheduler::UpdateSpeed(uint16_t currentPedalSpeed, int speedMessageIndex)
 {
     /**
      * Updates current speed of the car.
@@ -447,9 +447,10 @@ void TaskScheduler::UpdateSpeed(int currentPedalSpeed, int speedMessageIndex)
      * Returns:
      *    none
      **/
-
-    UpdateMsgByte(speedMessageIndex, currentPedalSpeed % 0x100, 2);
-    UpdateMsgByte(speedMessageIndex, currentPedalSpeed >> 8, 3);
+    uint8_t top_byte = (uint8_t)(currentPedalSpeed % 0x100);
+    uint8_t bottom_byte = (uint8_t)(currentPedalSpeed >> 8);
+    UpdateMsgByte(speedMessageIndex, top_byte, 2);
+    UpdateMsgByte(speedMessageIndex, bottom_byte, 3);
 }
 
 void TaskScheduler::ClearInverterFaults(void)
