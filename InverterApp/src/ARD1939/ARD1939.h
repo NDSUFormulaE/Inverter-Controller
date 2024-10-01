@@ -131,7 +131,7 @@ class ARD1939
     void DeleteMessageFilter(long lPGN);
     void CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_MessageLen, uint8_t* CAN_DestAddr, uint8_t* CAN_SrcAddr, uint8_t* CAN_Priority);
     bool CheckValidState(void);
-    int UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance, GPIOHandler gpioMan);
+    int UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance);
     void ClearFaults(void);
   private:
     uint8_t f01(uint8_t, uint8_t*);

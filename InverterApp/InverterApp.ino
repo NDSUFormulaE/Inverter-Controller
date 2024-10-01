@@ -153,7 +153,7 @@ void TaskInverterStateMachineControl(void * pvParameters)
                 case MCU_STDBY:
                     if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
                     {
-                        gpioMan.LcdUpdateState("STATE: Standby      ");
+                        Serial.println("Inverter in Standby State");
                     }
                     
                     taskMan.ChangeState(STDBY_TO_FUNCTIONAL_DIAG, INVERTER_CMD_MESSAGE_INDEX);
@@ -162,7 +162,7 @@ void TaskInverterStateMachineControl(void * pvParameters)
                 case MCU_FUNCTIONAL_DIAG:
                     if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
                     {
-                        gpioMan.LcdUpdateState("STATE:Func Diag     ");
+                        Serial.println("Inverter in Functional Diagnostics State");
                         Serial.println("Inverter will automatically transition to Ignition Ready");
                     }
                     taskMan.ChangeState(STDBY_TO_IGNIT_READY, INVERTER_CMD_MESSAGE_INDEX);
@@ -171,7 +171,7 @@ void TaskInverterStateMachineControl(void * pvParameters)
                 case MCU_IGNIT_READY:
                     if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
                     {
-                        gpioMan.LcdUpdateState("STATE:Ignition Ready");
+                        Serial.println("Inverter in Ignition Ready State");
                         Serial.println("Inverter will automatically transition to Power Ready");
                         Serial.println("Connect HVDC Bus");
                     }
@@ -180,7 +180,7 @@ void TaskInverterStateMachineControl(void * pvParameters)
                 case MCU_PWR_READY:
                     if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
                     {
-                        gpioMan.LcdUpdateState("STATE:Power Ready   ");
+                        Serial.println("Inverter in Power Ready State");
                         Serial.println("Commanding Inverter to Drive Ready");
                     }
                     taskMan.ChangeState(PWR_READY_TO_DRIVE_READY, INVERTER_CMD_MESSAGE_INDEX);
@@ -192,7 +192,7 @@ void TaskInverterStateMachineControl(void * pvParameters)
                 case MCU_DRIVE_READY:
                     if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
                     {
-                        gpioMan.LcdUpdateState("STATE:Drive Ready   ");
+                        Serial.println("Inverter in Drive Ready State");
                         Serial.println("Commanding Inverter to Normal Operation");
                     }
                     taskMan.ChangeState(DRIVE_READY_TO_NORM_OPS, INVERTER_CMD_MESSAGE_INDEX);
@@ -201,27 +201,27 @@ void TaskInverterStateMachineControl(void * pvParameters)
                 case MCU_NORM_OPS:
                     if(InitialState || (LastCommandedInverterState == InverterState.MCU_State && !InverterNormalOpState))
                     {
-                        gpioMan.LcdUpdateState("STATE:Norm Operation");
+                        Serial.println("Inverter in Normal Operation State");
                     }
                     InverterNormalOpState = true;
                     break;
 
                 case MCU_CNTRL_PWR_DOWN:
                     InverterPowerOffState = true;
-                    gpioMan.LcdUpdateState("STATE:Contr Pwr Down");
+                    Serial.println("Inverter in Controlled Power Down State");
                     Serial.println("Inverter Powering Down");
                     LastCommandedInverterState = MCU_STDBY;
                     break;
                 case MCU_FAIL_SAFE:
                     InverterPowerOffState = true;
-                    gpioMan.LcdUpdateState("STATE:Fail Safe     ");
+                    Serial.println("Inverter in Fail Safe State");
                     Serial.println("Inverter Powering Down");
                     LastCommandedInverterState = MCU_STDBY;
                     break;
                 case MCU_FAULT_CLASSA:
                     if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
                     {
-                        gpioMan.LcdUpdateState("STATE:Class A Fault ");
+                        Serial.println("Inverter in Class A Fault State");
                         Serial.println("Commanding Inverter to Standby");
                     }
                     //taskMan.ClearInverterFaults();
@@ -230,7 +230,7 @@ void TaskInverterStateMachineControl(void * pvParameters)
                 case MCU_FAULT_CLASSB:
                     if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
                     {
-                        gpioMan.LcdUpdateState("STATE:Class B Fault ");
+                        Serial.println("Inverter in Class B Fault State");
                         Serial.println("Commanding Inverter to Standby");
                     }
                     //taskMan.ClearInverterFaults();
