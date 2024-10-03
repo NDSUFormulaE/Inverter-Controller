@@ -27,26 +27,27 @@ bool GPIOHandler::Init()
         motorTempDisplay.begin();
         coolantTempDisplay.begin();
         GPIOHandler::LcdInit();
-    //speedDisplay.showString("NDSU SAE");
-        //LCDDisplaySAE();
     #endif
     
     return true;
 }
 unsigned long last_clear = 0;
+uint8_t lcd_test = 0;
 
 double randomDouble(double minf, double maxf)
 {
   return minf + random(1UL << 31) * (maxf - minf) / (1UL << 31);  // use 1ULL<<63 for max double values)
 }
 
-void GPIOHandler::UpdateDisplays()
-{
-    speedDisplay.showNumber(int(InverterState.Abs_Machine_Speed));
-    batteryDisplay.showNumber(InverterState.DC_Bus_Voltage);
-    motorTempDisplay.showNumber(int((InverterState.Motor_Temp_1 + InverterState.Motor_Temp_2 + InverterState.Motor_Temp_3)/3));
-    coolantTempDisplay.showNumber(InverterState.Inverter_Coolant_Temp);
-    LcdUpdate();
+void GPIOHandler::UpdateLCDs() {
+  LcdUpdate();
+}
+
+void GPIOHandler::UpdateSevenSegments() {
+  speedDisplay.showNumber(int(InverterState.Abs_Machine_Speed));
+  batteryDisplay.showNumber(InverterState.DC_Bus_Voltage);
+  motorTempDisplay.showNumber(int((InverterState.Motor_Temp_1 + InverterState.Motor_Temp_2 + InverterState.Motor_Temp_3)/3));
+  coolantTempDisplay.showNumber(InverterState.Inverter_Coolant_Temp);
 }
 
 bool GPIOHandler::LcdInit()
@@ -58,35 +59,15 @@ bool GPIOHandler::LcdInit()
 
 void GPIOHandler::LcdUpdate()
 {
-
-}
-
-void GPIOHandler::LCDDisplaySAE()
-{
-  //Characters used to create the logo
-  lcd.createChar(0, fullBox);
-  lcd.createChar(1, halfBoxBottom);
-  lcd.createChar(2, halfBoxTop);
-  lcd.createChar(3, topLeftAChar);
-  lcd.createChar(4, sideLeftAChar);
-  lcd.createChar(5, sideLeftAInnerChar);
-  lcd.createChar(6, sideLeftInnerCharConnector);
-  lcd.createChar(7, topRightSCurve);
-
-  delay(3000);
-  uint8_t i = 0;
-  while (1) {
-    lcd.clear();
-    lcd.print("Codes 0x"); lcd.print(i, HEX);
-    lcd.print("-0x"); lcd.print(i+16, HEX);
-    lcd.setCursor(0, 1);
+  lcd.clear();
+  lcd.print("Codes 0x"); lcd.print(lcd_test, HEX);
+  for (int i=1; i<4; i++) {
+    lcd.setCursor(0, i);
     for (int j=0; j<16; j++) {
-      lcd.printByte(i+j);
+      lcd.printByte(lcd_test+j);
     }
-    i+=16;
-    
-    delay(4000);
   }
+  lcd_test+=16;
 }
 
 uint16_t mapToRange(uint16_t x, uint16_t in_min, uint16_t in_max, uint16_t out_min, uint16_t out_max) {

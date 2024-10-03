@@ -49,7 +49,8 @@ class GPIOHandler
         uint16_t GetPedalSpeed();
         uint16_t GetClearPin();
         uint16_t GetPedalTorque();
-        void UpdateDisplays();
+        void UpdateLCDs();
+        void UpdateSevenSegments();
     private:
         uint16_t speed;
         bool LcdInit();
