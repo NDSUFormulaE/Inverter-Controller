@@ -61,11 +61,20 @@ void setup()
     );
 
     xTaskCreate(
-        TaskUpdateScreens,
-        "UpdateScreens",
+        TaskUpdateSevenSegments,
+        "UpdateSevenSegments",
         128,
         NULL,
         7,
+        NULL
+    );
+
+    xTaskCreate(
+        TaskUpdateLCDs,
+        "UpdateLCDs",
+        128,
+        NULL,
+        10,
         NULL
     );
 
@@ -110,13 +119,23 @@ void TaskClearFaults(void * pvParameters)
     }
 }
 
-void TaskUpdateScreens(void * pvParameters)
+void TaskUpdateSevenSegments(void * pvParameters)
 {
     (void) pvParameters;
     for (;;)
     {
-        gpioMan.UpdateDisplays();
-        vTaskDelay(10); // 15ms x 50 = 750ms
+        gpioMan.UpdateSevenSegments();
+        vTaskDelay(3); // 15ms x 50 = 750ms
+    }
+}
+
+void TaskUpdateLCDs(void * pvParameters)
+{
+    (void) pvParameters;
+    for (;;)
+    {
+        gpioMan.UpdateLCDs();
+        vTaskDelay(70); // 15ms x 50 = 750ms
     }
 }
 
