@@ -83,9 +83,28 @@ uint16_t GPIOHandler::GetPedalSpeed()
 
 uint16_t GPIOHandler::GetPedalTorque()
 {
-  int potent_read = analogRead(POT_GPIO);
-  uint16_t mapped_val = map(potent_read, 0, 1023, MIN_TORQUE_VAL, MAX_TORQUE_VAL);
-  return mapped_val;
+  int left_apps_read = analogRead(LEFT_APPS_GPIO);
+  if(left_apps_read > LEFT_APPS_MAX_ADC) {
+    return 0;
+  }
+  if(left_apps_read < LEFT_APPS_MIN_ADC) {
+    return 0;
+  }
+  int right_apps_read = analogRead(RIGHT_APPS_GPIO);
+  if(right_apps_read > RIGHT_APPS_MAX_ADC) {
+    return 0;
+  }
+  if(right_apps_read < RIGHT_APPS_MIN_ADC) {
+    return 0;
+  }
+  uint16_t mapped_left_val = map(left_apps_read, LEFT_APPS_MIN_ADC, LEFT_APPS_MAX_ADC, 0, 100);
+  uint16_t mapped_right_val = map(right_apps_read, RIGHT_APPS_MIN_ADC, RIGHT_APPS_MAX_ADC, 0, 100);
+  int diff = abs(mapped_right_val - mapped_left_val);
+  if(diff > 10){
+    return 0;
+  }
+  uint16_t apps_avg = (mapped_left_val + mapped_right_val) / 2;
+  return apps_avg;
 }
 
 uint16_t GPIOHandler::GetClearPin()

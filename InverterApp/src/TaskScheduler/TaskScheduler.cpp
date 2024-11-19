@@ -2,6 +2,9 @@
 #include "../ARD1939/CAN_SPEC/StateTransition.h"
 #include "../ARD1939/CAN_SPEC/MotorControlUnitState.h"
 
+// USE_APPS defined in powerMode.h
+#include "../gpioHandler/powerMode.h"
+
 InitializedCANTask CANTasks[MAX_TASKS];
 ARD1939 j1939;
 extern struct CANVariables InverterState;
@@ -40,7 +43,11 @@ int TaskScheduler::Init()
 
     uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
     uint8_t DefaultTorqueArray[] = {0xF4, 0x18, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
+    #ifndef USE_APPS
     TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0x03, 0xA2, 8, 15, DefaultSpeedArray, INVERTER_CMD_MESSAGE_INDEX);
+    #else
+    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0x03, 0xA2, 8, 15, DefaultTorqueArray, INVERTER_CMD_MESSAGE_INDEX);
+    #endif
     return 0;
 }
 

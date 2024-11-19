@@ -2,9 +2,25 @@
 #include "../Time/TimeLib.h"
 #include <Arduino.h>
 #include "../TaskScheduler/TaskScheduler.h"
+// USE_APPS defined in powerMode.h
+#include "powerMode.h"
 
 #define POT_GPIO           A1
+#define LEFT_APPS_GPIO     A2
+#define RIGHT_APPS_GPIO    A3
+
+
 #define CLEAR_FAULT_GPIO   A5
+
+//minimum voltage 0.015V
+#define LEFT_APPS_MIN_ADC 3
+//Maximum voltage 0.317V
+#define LEFT_APPS_MAX_ADC 97
+
+//minimum voltage 0.947V
+#define RIGHT_APPS_MIN_ADC 292
+//Maximum voltage 1.271V
+#define RIGHT_APPS_MAX_ADC 393
 
 #define SPEED_OFFSET   16000
 #define SPEED_MIN_RPM      0
@@ -16,7 +32,7 @@
 // 0% -> 0.7%
 #define TORQUE_OFFSET      16000
 #define TORQUE_PERC_MIN    0
-#define TORQUE_PERC_MAX    15
+#define TORQUE_PERC_MAX    5
 
 #define MIN_TORQUE_VAL (TORQUE_OFFSET + TORQUE_PERC_MIN) * 2
 #define MAX_TORQUE_VAL (TORQUE_OFFSET + TORQUE_PERC_MAX) * 2
