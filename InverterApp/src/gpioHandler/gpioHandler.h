@@ -12,15 +12,15 @@
 
 #define CLEAR_FAULT_GPIO   A5
 
-//minimum voltage 0.015V
-#define LEFT_APPS_MIN_ADC 3
-//Maximum voltage 0.317V
-#define LEFT_APPS_MAX_ADC 97
+//minimum voltage 0.206V
+#define LEFT_APPS_MIN_ADC 63
+//Maximum voltage 1.157V
+#define LEFT_APPS_MAX_ADC 358
 
-//minimum voltage 0.947V
-#define RIGHT_APPS_MIN_ADC 292
-//Maximum voltage 1.271V
-#define RIGHT_APPS_MAX_ADC 393
+//minimum voltage 0.492V
+#define RIGHT_APPS_MIN_ADC 152
+//Maximum voltage 1.496V
+#define RIGHT_APPS_MAX_ADC 494
 
 #define SPEED_OFFSET   16000
 #define SPEED_MIN_RPM      0
