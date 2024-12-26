@@ -4,8 +4,10 @@
 #include <stdlib.h>
 #include "../Time/TimeLib.h"
 #include <Arduino.h>
-#include "../TaskScheduler/TaskScheduler.h"
+#include "../FreeRTOS/src/Arduino_FreeRTOS.h"
+#include "../FreeRTOS/src/semphr.h"  // Add this for SemaphoreHandle_t
 // USE_APPS defined in powerMode.h
+#include "../TaskScheduler/TaskScheduler.h"
 #include "powerMode.h"
 
 #define POT_GPIO           A1
@@ -62,6 +64,15 @@
 
 class GPIOHandler
 {
+    private:
+        uint16_t speed;
+        char displayBuffer[4][20];  // Current display content
+        char newBuffer[4][20];      // New content to be displayed
+        bool needsUpdate;           // Flag to track if update is needed
+        SemaphoreHandle_t lcdMutex; // Protect LCD access
+        bool LcdInit();
+        void LCDDisplaySAE();
+        void LcdUpdate();
     public:
         bool Init(void);
         uint16_t GetPedalSpeed();
@@ -69,11 +80,7 @@ class GPIOHandler
         uint16_t GetPedalTorque();
         void UpdateLCDs();
         void UpdateSevenSegments();
-    private:
-        uint16_t speed;
-        bool LcdInit();
-        void LCDDisplaySAE();
-        void LcdUpdate();
+        void UpdateDisplayText(const char* text, uint8_t row, uint8_t col);
 };
 
 #endif /* GPIO_HANDLER_H */

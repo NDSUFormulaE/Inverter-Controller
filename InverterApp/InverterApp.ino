@@ -72,9 +72,9 @@ void setup()
     xTaskCreate(
         TaskUpdateLCDs,
         "UpdateLCDs",
-        128,
+        256,
         NULL,
-        10,
+        3,
         NULL
     );
 
@@ -132,10 +132,15 @@ void TaskUpdateSevenSegments(void * pvParameters)
 void TaskUpdateLCDs(void * pvParameters)
 {
     (void) pvParameters;
+    TickType_t xLastWakeTime;
+    const TickType_t xFrequency = pdMS_TO_TICKS(100); // 100ms update interval
+    
+    xLastWakeTime = xTaskGetTickCount();
+    
     for (;;)
     {
         gpioMan.UpdateLCDs();
-        vTaskDelay(70); // 15ms x 50 = 750ms
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);  // Consistent timing
     }
 }
 

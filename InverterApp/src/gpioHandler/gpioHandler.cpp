@@ -16,6 +16,11 @@ uint16_t speed = 0;
 TM1637TinyDisplay speedDisplay(SPD_CLK, SPD_DATA), batteryDisplay(BATT_CLK,BATT_DATA), motorTempDisplay(TEMP_CLK,TEMP_DATA), coolantTempDisplay(COOL_CLK,COOL_DATA);
 LiquidCrystal_I2C lcd(0x27,20,4);
 
+SemaphoreHandle_t lcdMutex;
+char displayBuffer[4][20];
+char newBuffer[4][20];
+bool needsUpdate;
+
 bool GPIOHandler::Init()
 {
     // Configure all of our GPIOs
@@ -56,22 +61,60 @@ void GPIOHandler::UpdateSevenSegments() {
 
 bool GPIOHandler::LcdInit()
 {
-  //Initialized screen and backlight.
-  lcd.init();
-  lcd.backlight();
+    lcdMutex = xSemaphoreCreateMutex();
+    if (lcdMutex == NULL) {
+        return false;
+    }
+    
+    //Initialize screen and backlight
+    lcd.init();
+    lcd.backlight();
+    
+    // Initialize buffers
+    memset(displayBuffer, ' ', sizeof(displayBuffer));
+    memset(newBuffer, ' ', sizeof(newBuffer));
+    needsUpdate = false;
+    
+    return true;
 }
 
 void GPIOHandler::LcdUpdate()
 {
-  lcd.clear();
-  lcd.print("Codes 0x"); lcd.print(lcd_test, HEX);
-  for (int i=1; i<4; i++) {
-    lcd.setCursor(0, i);
-    for (int j=0; j<16; j++) {
-      lcd.printByte(lcd_test+j);
+    if (xSemaphoreTake(lcdMutex, portMAX_DELAY) == pdTRUE) {
+        // Update first line with test pattern
+        snprintf(newBuffer[0], 20, "Codes 0x%02X", lcd_test);
+        
+        // Update other lines
+        for (int i = 1; i < 4; i++) {
+            for (int j = 0; j < 16; j++) {
+                newBuffer[i][j] = lcd_test + j;
+            }
+            newBuffer[i][16] = '\0';
+        }
+        
+        // Only update changed lines
+        for (int i = 0; i < 4; i++) {
+            if (memcmp(displayBuffer[i], newBuffer[i], 20) != 0) {
+                lcd.setCursor(0, i);
+                lcd.print(newBuffer[i]);
+                memcpy(displayBuffer[i], newBuffer[i], 20);
+            }
+        }
+        
+        lcd_test += 16;
+        xSemaphoreGive(lcdMutex);
     }
-  }
-  lcd_test+=16;
+}
+
+void GPIOHandler::UpdateDisplayText(const char* text, uint8_t row, uint8_t col)
+{
+    if (row >= 4 || col >= 20) return;
+    
+    if (xSemaphoreTake(lcdMutex, 0) == pdTRUE) {  // Non-blocking semaphore take
+        strncpy(&newBuffer[row][col], text, 20 - col);
+        needsUpdate = true;
+        xSemaphoreGive(lcdMutex);
+    }
 }
 
 uint16_t mapToRange(uint16_t x, uint16_t in_min, uint16_t in_max, uint16_t out_min, uint16_t out_max) {
