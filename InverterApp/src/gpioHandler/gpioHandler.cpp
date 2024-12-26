@@ -3,12 +3,6 @@
 #include "../TM1637TinyDisplay/TM1637TinyDisplay.h"
 #include "../LiquidCrystal_I2C/LiquidCrystal_I2C.h"
 
-#if defined(ARDUINO) && ARDUINO >= 100
-#define printByte(args)  write(args);
-#else
-#define printByte(args)  print(args,BYTE);
-#endif
-
 extern struct CANVariables InverterState;
 
 uint16_t speed = 0;
@@ -53,7 +47,17 @@ double randomDouble(double minf, double maxf)
 }
 
 void GPIOHandler::UpdateLCDs() {
-  LcdUpdate();
+    if (xSemaphoreTake(lcdMutex, portMAX_DELAY) == pdTRUE) {
+        // Only update changed lines
+        for (int i = 0; i < 4; i++) {
+            if (strncmp(displayBuffer[i], newBuffer[i], 20) != 0) {
+                lcd.setCursor(0, i);
+                lcd.print(newBuffer[i]);
+                strncpy(displayBuffer[i], newBuffer[i], 20);
+            }
+        }
+        xSemaphoreGive(lcdMutex);
+    }
 }
 
 void GPIOHandler::UpdateSevenSegments() {
@@ -74,21 +78,6 @@ bool GPIOHandler::LcdInit()
     lcd.backlight();
     
     return true;
-}
-
-void GPIOHandler::LcdUpdate()
-{
-    if (xSemaphoreTake(lcdMutex, portMAX_DELAY) == pdTRUE) {
-        // Only update changed lines
-        for (int i = 0; i < 4; i++) {
-            if (strncmp(displayBuffer[i], newBuffer[i], 20) != 0) {
-                lcd.setCursor(0, i);
-                lcd.print(newBuffer[i]);
-                strncpy(displayBuffer[i], newBuffer[i], 20);
-            }
-        }
-        xSemaphoreGive(lcdMutex);
-    }
 }
 
 void GPIOHandler::UpdateDisplayText(const char* text, uint8_t row, uint8_t col)

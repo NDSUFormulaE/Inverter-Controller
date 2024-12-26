@@ -77,7 +77,6 @@ class GPIOHandler
         
         bool LcdInit();
         void LCDDisplaySAE();
-        void LcdUpdate();
         const char* getStateName(uint8_t state); // Helper to convert state to string
         
     public:
