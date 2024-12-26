@@ -475,12 +475,10 @@ void TaskScheduler::ClearInverterFaults(void)
     j1939.ClearFaults();
     if (InverterState.MCU_State == MCU_FAULT_CLASSA)
     {
-        Serial.println("State is MCU Class A");
         TaskScheduler::ChangeState(FAULT_CLASSA_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
     }
     else if (InverterState.MCU_State == MCU_FAULT_CLASSB)
     {
-        Serial.println("State is MCU Class B");
         TaskScheduler::ChangeState(FAULT_CLASSB_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
     }
 }

@@ -2,10 +2,13 @@
 #define GPIO_HANDLER_H
 
 #include <stdlib.h>
-#include "../Time/TimeLib.h"
 #include <Arduino.h>
+#include <LiquidCrystal.h>
+#include "../Time/TimeLib.h"
 #include "../FreeRTOS/src/Arduino_FreeRTOS.h"
 #include "../FreeRTOS/src/semphr.h"  // Add this for SemaphoreHandle_t
+#include "../ARD1939/CAN_SPEC/MotorControlUnitState.h" // For MCU states
+#include "../ARD1939/ARD1939.h"    // For CAN status codes
 // USE_APPS defined in powerMode.h
 #include "../TaskScheduler/TaskScheduler.h"
 #include "powerMode.h"
@@ -69,10 +72,14 @@ class GPIOHandler
         char displayBuffer[4][20];  // Current display content
         char newBuffer[4][20];      // New content to be displayed
         bool needsUpdate;           // Flag to track if update is needed
+        bool persistInfoLines;      // Flag to control info line persistence
         SemaphoreHandle_t lcdMutex; // Protect LCD access
+        
         bool LcdInit();
         void LCDDisplaySAE();
         void LcdUpdate();
+        const char* getStateName(uint8_t state); // Helper to convert state to string
+        
     public:
         bool Init(void);
         uint16_t GetPedalSpeed();
@@ -81,6 +88,17 @@ class GPIOHandler
         void UpdateLCDs();
         void UpdateSevenSegments();
         void UpdateDisplayText(const char* text, uint8_t row, uint8_t col);
+        
+        // Base LCD update functions
+        void UpdateLCD(const char* state, const char* fault, const char* info1, const char* info2);
+        void UpdateState(const char* state);
+        void UpdateFault(const char* fault);
+        void UpdateInfo(const char* info1, const char* info2, bool persist = false);
+        
+        // Specific display functions
+        void DisplayStateTransition(uint8_t state, const char* transitionMsg, bool persistInfo = false);
+        void DisplayFaultState(uint8_t state, const char* faultType, const char* action, bool persistInfo = true);
+        const char* getCANStatusName(uint8_t status); // Helper to convert CAN status to string
 };
 
 #endif /* GPIO_HANDLER_H */

@@ -43,12 +43,19 @@ extern struct CANVariables InverterState;
 //// Functions
 void setup()
 {
-    Serial.begin(115200);
-    if ((taskMan.Init() != 0) || (gpioMan.Init() == false))
+    // Initialize GPIO first since we need it for display
+    if (gpioMan.Init() == false)
     {
         delay(500);
-        Serial.println("Resetting");
-        resetFunc(); // If CAN Controller doesnt init correctly, wait 500ms then try again.
+        resetFunc();  // If GPIO init fails, just reset immediately
+    }
+
+    // Now we can use the display for task manager init
+    if (taskMan.Init() != 0)
+    {
+        gpioMan.UpdateLCD("Error", "Task Init Failed", "Resetting...", "");
+        delay(1000);
+        resetFunc();
     }
 
     xTaskCreate(
@@ -96,7 +103,7 @@ void setup()
         NULL
     );
 
-    Serial.println("Initialized");
+    gpioMan.UpdateLCD("Status", "Initialized", "Ready", "");
 }
 
 void loop()
@@ -185,46 +192,6 @@ const StateTransition stateTransitions[] = {
     {MCU_DRIVE_READY, MCU_NORM_OPS, DRIVE_READY_TO_NORM_OPS, "Transitioning to Normal Operation"}
 };
 
-// Helper function to find and execute state transition
-void executeStateTransition(uint8_t currentState) {
-    static unsigned long lastStateChangeTime = 0;
-    const unsigned long STATE_CHANGE_DELAY = 500; // 500ms minimum between state changes
-    
-    // Don't process transitions too quickly
-    if (millis() - lastStateChangeTime < STATE_CHANGE_DELAY) {
-        return;
-    }
-    
-    // Find matching transition
-    for (const StateTransition& transition : stateTransitions) {
-        if (transition.currentState == currentState) {
-            // Log state change
-            Serial.print("Current State: 0x");
-            Serial.print(currentState, HEX);
-            Serial.print(" - ");
-            Serial.println(transition.stateMessage);
-            
-            // Execute transition if command exists
-            if (transition.transitionCommand != NO_CHANGE) {
-                taskMan.ChangeState(transition.transitionCommand, INVERTER_CMD_MESSAGE_INDEX);
-                LastCommandedInverterState = transition.nextState;
-            }
-            
-            lastStateChangeTime = millis();
-            break;
-        }
-    }
-}
-
-void handleFaultState(uint8_t faultState) {
-    if (LastCommandedInverterState != MCU_STDBY) {
-        Serial.print("Fault detected: 0x");
-        Serial.println(faultState, HEX);
-        Serial.println("Transitioning to Standby");
-        LastCommandedInverterState = MCU_STDBY;
-    }
-}
-
 void TaskInverterStateMachineControl(void * pvParameters)
 {
     (void) pvParameters;
@@ -241,7 +208,9 @@ void TaskInverterStateMachineControl(void * pvParameters)
         {
             if (InverterState.CAN_Bus_Status != ADDRESSCLAIM_FINISHED)
             {
-                Serial.println("Waiting for CAN bus initialization...");
+                gpioMan.UpdateState("Initializing...");
+                gpioMan.UpdateFault("Waiting for CAN");
+                gpioMan.UpdateInfo("Bus Status:", "Not Connected");
                 vTaskDelayUntil(&xLastWakeTime, xFrequency);
                 continue;
             }
@@ -251,30 +220,34 @@ void TaskInverterStateMachineControl(void * pvParameters)
             // If not in standby, try to get there
             if (currentState != MCU_STDBY && currentState != MCU_PWR_UP)
             {
-                Serial.print("Error: Device not in standby state. Current state: 0x");
-                Serial.println(currentState, HEX);
-                
-                // If in a fault state, try to transition to standby
                 if (currentState == MCU_FAULT_CLASSA)
                 {
-                    Serial.println("Attempting to clear Class A fault and return to standby...");
+                    gpioMan.DisplayFaultState(currentState,
+                                                "Class A Fault",
+                                                "Attempting Clear");
                     taskMan.ChangeState(FAULT_CLASSA_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
                 }
                 else if (currentState == MCU_FAULT_CLASSB)
                 {
-                    Serial.println("Attempting to transition from Class B fault to Power Ready...");
+                    gpioMan.DisplayFaultState(currentState,
+                                                "Class B Fault",
+                                                "To Power Ready");
                     taskMan.ChangeState(FAULT_CLASSB_TO_PWR_READY, INVERTER_CMD_MESSAGE_INDEX);
                 }
                 else
                 {
-                    Serial.println("Unable to automatically transition to standby.");
+                    gpioMan.DisplayFaultState(currentState,
+                                                "Error",
+                                                "Cannot -> Standby");
                 }
                 
                 initRetries++;
                 if (initRetries >= MAX_INIT_RETRIES)
                 {
-                    Serial.println("ERROR: Maximum initialization retries reached. Manual intervention required.");
-                    while(1) { vTaskDelay(portMAX_DELAY); } // Stop trying to initialize
+                    gpioMan.UpdateState("ERROR");
+                    gpioMan.UpdateFault("Max Retries Hit");
+                    gpioMan.UpdateInfo("Manual Reset", "Required");
+                    while(1) { vTaskDelay(portMAX_DELAY); }
                 }
                 
                 vTaskDelayUntil(&xLastWakeTime, xFrequency);
@@ -282,7 +255,9 @@ void TaskInverterStateMachineControl(void * pvParameters)
             }
             
             // If we get here, we're in standby and can start normal initialization
-            Serial.println("Device in standby state, beginning initialization sequence...");
+            gpioMan.UpdateState("Standby");
+            gpioMan.UpdateFault("No Faults");
+            gpioMan.UpdateInfo("Starting Init", "Sequence...");
             taskMan.ChangeState(STDBY_TO_FUNCTIONAL_DIAG, INVERTER_CMD_MESSAGE_INDEX);
             InitialState = false;
             LastCommandedInverterState = MCU_FUNCTIONAL_DIAG;
@@ -291,7 +266,7 @@ void TaskInverterStateMachineControl(void * pvParameters)
         else if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED)
         {
             uint8_t currentState = InverterState.MCU_State;
-            lastCANStatusTime = millis(); // Reset timer when CAN is working
+            lastCANStatusTime = millis();
             
             // Handle fault states
             if (currentState == MCU_FAULT_CLASSA || currentState == MCU_FAULT_CLASSB || 
@@ -302,7 +277,9 @@ void TaskInverterStateMachineControl(void * pvParameters)
             // Detect power down state
             else if (currentState == MCU_CNTRL_PWR_DOWN && LastCommandedInverterState != MCU_STDBY)
             {
-                Serial.println("Inverter powering down - ignition line low");
+                gpioMan.UpdateState("Power Down");
+                gpioMan.UpdateFault("No Faults");
+                gpioMan.UpdateInfo("Ignition Line", "Low");
                 LastCommandedInverterState = MCU_STDBY;
             }
             // Handle normal state transitions
@@ -313,12 +290,52 @@ void TaskInverterStateMachineControl(void * pvParameters)
         }
         else if (millis() - lastCANStatusTime >= CAN_STATUS_INTERVAL)
         {
-            // Periodically report when CAN address claim isn't finished
-            Serial.print("Warning: CAN bus not ready. Status: 0x");
-            Serial.println(InverterState.CAN_Bus_Status, HEX);
+            const char* statusStr = gpioMan.getCANStatusName(InverterState.CAN_Bus_Status);
+            gpioMan.UpdateState("CAN Bus Status");
+            gpioMan.UpdateFault(statusStr);
+            gpioMan.UpdateInfo("Address Claim", "In Progress", false);  // Don't persist CAN status info
             lastCANStatusTime = millis();
         }
         
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    }
+}
+
+void executeStateTransition(uint8_t currentState) {
+    static unsigned long lastStateChangeTime = 0;
+    const unsigned long STATE_CHANGE_DELAY = 500; // 500ms minimum between state changes
+    
+    // Don't process transitions too quickly
+    if (millis() - lastStateChangeTime < STATE_CHANGE_DELAY) {
+        return;
+    }
+    
+    // Find matching transition
+    for (const StateTransition& transition : stateTransitions) {
+        if (transition.currentState == currentState) {
+            gpioMan.DisplayStateTransition(currentState, transition.stateMessage);
+            
+            // Execute transition if command exists
+            if (transition.transitionCommand != NO_CHANGE) {
+                taskMan.ChangeState(transition.transitionCommand, INVERTER_CMD_MESSAGE_INDEX);
+                LastCommandedInverterState = transition.nextState;
+            }
+            
+            lastStateChangeTime = millis();
+            break;
+        }
+    }
+}
+
+void handleFaultState(uint8_t faultState) {
+    if (faultState == MCU_FAULT_CLASSA) {
+        gpioMan.DisplayFaultState(faultState, "Class A Fault", "Attempting Clear");
+        taskMan.ChangeState(FAULT_CLASSA_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
+    } else if (faultState == MCU_FAULT_CLASSB) {
+        gpioMan.DisplayFaultState(faultState, "Class B Fault", "To Power Ready");
+        taskMan.ChangeState(FAULT_CLASSB_TO_PWR_READY, INVERTER_CMD_MESSAGE_INDEX);
+    } else if (faultState == MCU_FAIL_SAFE) {
+        gpioMan.DisplayFaultState(faultState, "Fail Safe", "System Halted");
+        while(1) { vTaskDelay(portMAX_DELAY); }  // Stay in fail safe
     }
 }

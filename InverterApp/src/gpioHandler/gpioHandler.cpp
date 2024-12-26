@@ -20,22 +20,30 @@ SemaphoreHandle_t lcdMutex;
 char displayBuffer[4][20];
 char newBuffer[4][20];
 bool needsUpdate;
+bool persistInfoLines = false;
 
 bool GPIOHandler::Init()
 {
-    // Configure all of our GPIOs
-    #ifdef DISPLAYS_ENABLED
-        // ALL OF OUR CODE
-        Serial.println("Starting Displays");
-        speedDisplay.begin();
-        batteryDisplay.begin();
-        motorTempDisplay.begin();
-        coolantTempDisplay.begin();
-        GPIOHandler::LcdInit();
-    #endif
+    speed = 0;
+    needsUpdate = false;
+    persistInfoLines = false;
     
-    return true;
+    // Initialize display buffers
+    for(int i = 0; i < 4; i++) {
+        for(int j = 0; j < 20; j++) {
+            displayBuffer[i][j] = ' ';
+            newBuffer[i][j] = ' ';
+        }
+    }
+    
+    lcdMutex = xSemaphoreCreateMutex();
+    if (lcdMutex == NULL) {
+        return false;
+    }
+    
+    return LcdInit();
 }
+
 unsigned long last_clear = 0;
 uint8_t lcd_test = 0;
 
@@ -61,19 +69,9 @@ void GPIOHandler::UpdateSevenSegments() {
 
 bool GPIOHandler::LcdInit()
 {
-    lcdMutex = xSemaphoreCreateMutex();
-    if (lcdMutex == NULL) {
-        return false;
-    }
-    
     //Initialize screen and backlight
     lcd.init();
     lcd.backlight();
-    
-    // Initialize buffers
-    memset(displayBuffer, ' ', sizeof(displayBuffer));
-    memset(newBuffer, ' ', sizeof(newBuffer));
-    needsUpdate = false;
     
     return true;
 }
@@ -81,27 +79,14 @@ bool GPIOHandler::LcdInit()
 void GPIOHandler::LcdUpdate()
 {
     if (xSemaphoreTake(lcdMutex, portMAX_DELAY) == pdTRUE) {
-        // Update first line with test pattern
-        snprintf(newBuffer[0], 20, "Codes 0x%02X", lcd_test);
-        
-        // Update other lines
-        for (int i = 1; i < 4; i++) {
-            for (int j = 0; j < 16; j++) {
-                newBuffer[i][j] = lcd_test + j;
-            }
-            newBuffer[i][16] = '\0';
-        }
-        
         // Only update changed lines
         for (int i = 0; i < 4; i++) {
-            if (memcmp(displayBuffer[i], newBuffer[i], 20) != 0) {
+            if (strncmp(displayBuffer[i], newBuffer[i], 20) != 0) {
                 lcd.setCursor(0, i);
                 lcd.print(newBuffer[i]);
-                memcpy(displayBuffer[i], newBuffer[i], 20);
+                strncpy(displayBuffer[i], newBuffer[i], 20);
             }
         }
-        
-        lcd_test += 16;
         xSemaphoreGive(lcdMutex);
     }
 }
@@ -166,4 +151,93 @@ uint16_t GPIOHandler::GetClearPin()
         return analogReadVal;
     }
     return 0;
+}
+
+const char* GPIOHandler::getStateName(uint8_t state) {
+    switch(state) {
+        case MCU_PWR_UP:  // Same as MCU_STDBY (0x00)
+            return "Standby/Power Up";
+        case MCU_FUNCTIONAL_DIAG: return "Functional Diag";
+        case MCU_FAULT_CLASSA: return "Fault Class A";
+        case MCU_IGNIT_READY: return "Ignition Ready";
+        case MCU_PWR_READY: return "Power Ready";
+        case MCU_PWR_DIAG: return "Power Diagnostics";
+        case MCU_DRIVE_READY: return "Drive Ready";
+        case MCU_NORM_OPS: return "Normal Operation";
+        case MCU_FAULT_CLASSB: return "Fault Class B";
+        case MCU_CNTRL_PWR_DOWN: return "Power Down";
+        case MCU_FAIL_SAFE: return "Fail Safe";
+        case MCU_ADV_DIAG_CLASSA: return "Adv Diag Class A";
+        case MCU_DISCHARGE_DIAG: return "Discharge Diag";
+        case MCU_ADV_DIAG_CLASSB: return "Adv Diag Class B";
+        default: return "Unknown State";
+    }
+}
+
+const char* GPIOHandler::getCANStatusName(uint8_t status) {
+    switch(status) {
+        case ADDRESSCLAIM_INIT: return "Initializing";
+        case ADDRESSCLAIM_INPROGRESS: return "In Progress";
+        case ADDRESSCLAIM_FINISHED: return "Connected";
+        case ADDRESSCLAIM_FAILED: return "Failed";
+        default: return "Unknown Status";
+    }
+}
+
+void GPIOHandler::UpdateState(const char* state) {
+    if (xSemaphoreTake(lcdMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+        UpdateDisplayText(state, 0, 0);
+        if (!persistInfoLines) {
+            // Clear info lines if not persisting
+            UpdateDisplayText("", 2, 0);
+            UpdateDisplayText("", 3, 0);
+        }
+        xSemaphoreGive(lcdMutex);
+    }
+}
+
+void GPIOHandler::UpdateFault(const char* fault) {
+    if (xSemaphoreTake(lcdMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+        UpdateDisplayText(fault, 1, 0);
+        if (!persistInfoLines) {
+            // Clear info lines if not persisting
+            UpdateDisplayText("", 2, 0);
+            UpdateDisplayText("", 3, 0);
+        }
+        xSemaphoreGive(lcdMutex);
+    }
+}
+
+void GPIOHandler::UpdateInfo(const char* info1, const char* info2, bool persist) {
+    if (xSemaphoreTake(lcdMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+        persistInfoLines = persist;
+        UpdateDisplayText(info1, 2, 0);
+        UpdateDisplayText(info2, 3, 0);
+        xSemaphoreGive(lcdMutex);
+    }
+}
+
+void GPIOHandler::UpdateLCD(const char* state, const char* fault, const char* info1, const char* info2) {
+    if (xSemaphoreTake(lcdMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+        UpdateDisplayText(state, 0, 0);
+        UpdateDisplayText(fault, 1, 0);
+        UpdateDisplayText(info1, 2, 0);
+        UpdateDisplayText(info2, 3, 0);
+        xSemaphoreGive(lcdMutex);
+    }
+}
+
+void GPIOHandler::DisplayStateTransition(uint8_t state, const char* transitionMsg, bool persistInfo) {
+    const char* stateName = getStateName(state);
+    UpdateState(stateName);
+    UpdateFault("No Faults");
+    UpdateInfo(transitionMsg, "", persistInfo);
+}
+
+void GPIOHandler::DisplayFaultState(uint8_t state, const char* faultType, const char* action, bool persistInfo) {
+    char stateStr[20];
+    snprintf(stateStr, sizeof(stateStr), "State: 0x%02X", state);
+    UpdateState(stateStr);
+    UpdateFault(faultType);
+    UpdateInfo(action, "", persistInfo);
 }
