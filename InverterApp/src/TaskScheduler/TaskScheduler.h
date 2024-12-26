@@ -8,14 +8,21 @@
 #include "../ARD1939/ARD1939.h"
 #include "../ARD1939/CAN_SPEC/PGN.h"
 
-enum {MAX_TASKS = 15};
+// We currntly support 3 tasks, and only use one. If needed we can add more.
+enum {MAX_TASKS = 3};
 #define INVERTER_CMD_MESSAGE_INDEX 0
+
+// Default CAN message configuration
+#define DEFAULT_INVERTER_CMD_PRIORITY 0x04
+#define DEFAULT_INVERTER_CMD_PGN COMMAND2_SPEED
+#define DEFAULT_INVERTER_CMD_DEST_ADDR 0xA2
+#define DEFAULT_INVERTER_CMD_MSG_LEN 8
+#define DEFAULT_INVERTER_CMD_INTERVAL 15
 
 struct CANTask
 {
     uint8_t priority;
     long PGN;
-    uint8_t srcAddr;
     uint8_t destAddr;
     int msgLen;
     unsigned long interval;
@@ -37,9 +44,20 @@ struct MsgReturn
 
 class TaskScheduler
 {
+    private:
+        void SendMessages();
+        void RecieveMessages();
+        int FirstFreeInCANTasks();
+        void SetupCANTask(uint8_t priority, long PGN, uint8_t destAddr, 
+                         int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN], int index);
+        void SetupDefaultCANTasks();  // New private function to setup default CAN tasks
+        InitializedCANTask CANTasks[MAX_TASKS];
+        ARD1939 j1939;
+
     public:
         int Init();
-        int AddCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8_t destAddr, int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN]);
+        int AddCANTask(uint8_t priority, long PGN, uint8_t destAddr, 
+                      int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN]);
         void RemoveCANTask(int taskIndex);
         MsgReturn GetMsg(int taskIndex);
         void UpdateMsg(int taskIndex, int msg[], int msgLen);
@@ -51,13 +69,6 @@ class TaskScheduler
         void EnableDriveMessage(void);
         void DisableDriveMessage(void);
         void ClearInverterFaults(void);
-    private:
-        void SendMessages();
-        void RecieveMessages();
-        int FirstFreeInCANTasks();
-        void SetupCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8_t destAddr, int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN], int index);
-        InitializedCANTask CANTasks[MAX_TASKS];
-        ARD1939 j1939;
 };
 
 #endif /* TASK_SCHEDULER_H */

@@ -26,6 +26,7 @@ int TaskScheduler::Init()
     {
         return j1939_init;
     }
+
     // Set the preferred address and address range
     j1939.SetPreferredAddress(SA_PREFERRED);
     j1939.SetAddressRange(ADDRESSRANGEBOTTOM, ADDRESSRANGETOP);
@@ -41,14 +42,82 @@ int TaskScheduler::Init()
                   NAME_INDUSTRY_GROUP,
                   NAME_ARBITRARY_ADDRESS_CAPABLE);
 
+    // Setup default CAN tasks
+    SetupDefaultCANTasks();
+
+    return 0;
+}
+
+void TaskScheduler::SetupDefaultCANTasks() {
     uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
     uint8_t DefaultTorqueArray[] = {0xF4, 0x18, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
+    
     #ifndef USE_APPS
-    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0x03, 0xA2, 8, 15, DefaultSpeedArray, INVERTER_CMD_MESSAGE_INDEX);
+    TaskScheduler::SetupCANTask(DEFAULT_INVERTER_CMD_PRIORITY, 
+                              DEFAULT_INVERTER_CMD_PGN,
+                              DEFAULT_INVERTER_CMD_DEST_ADDR,
+                              DEFAULT_INVERTER_CMD_MSG_LEN, 
+                              DEFAULT_INVERTER_CMD_INTERVAL,
+                              DefaultSpeedArray,
+                              INVERTER_CMD_MESSAGE_INDEX);
     #else
-    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0x03, 0xA2, 8, 15, DefaultTorqueArray, INVERTER_CMD_MESSAGE_INDEX);
+    TaskScheduler::SetupCANTask(DEFAULT_INVERTER_CMD_PRIORITY, 
+                              DEFAULT_INVERTER_CMD_PGN,
+                              DEFAULT_INVERTER_CMD_DEST_ADDR,
+                              DEFAULT_INVERTER_CMD_MSG_LEN, 
+                              DEFAULT_INVERTER_CMD_INTERVAL,
+                              DefaultTorqueArray,
+                              INVERTER_CMD_MESSAGE_INDEX);
     #endif
-    return 0;
+}
+
+void TaskScheduler::SetupCANTask(uint8_t priority, long PGN, uint8_t destAddr, 
+                               int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN], int index)
+{
+    CANTasks[index].task.priority = priority;
+    CANTasks[index].task.PGN = PGN;
+    CANTasks[index].task.destAddr = destAddr;
+    CANTasks[index].task.msgLen = msgLen;
+    CANTasks[index].task.interval = interval;
+    
+    for (int i = 0; i < msgLen; i++)
+    {
+        CANTasks[index].task.msg[i] = msg[i];
+    }
+    CANTasks[index].initialized = true;
+    CANTasks[index].lastRunTime = 0;
+}
+
+int TaskScheduler::AddCANTask(uint8_t priority, long PGN, uint8_t destAddr,
+                            int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN])
+{
+    int index = FirstFreeInCANTasks();
+    if (index == -1)
+    {
+        return -1;
+    }
+    SetupCANTask(priority, PGN, destAddr, msgLen, interval, msg, index);
+    return index;
+}
+
+void TaskScheduler::SendMessages()
+{
+    for (int i = 0; i < MAX_TASKS; i++)
+    {
+        if (CANTasks[i].initialized && ((millis() - CANTasks[i].lastRunTime) >= CANTasks[i].task.interval))
+        {
+            if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED)
+            {
+                j1939.Transmit(CANTasks[i].task.priority,
+                            CANTasks[i].task.PGN,
+                            j1939.GetSourceAddress(),  // Always get current source address
+                            CANTasks[i].task.destAddr,
+                            CANTasks[i].task.msg,
+                            CANTasks[i].task.msgLen);
+            }
+            CANTasks[i].lastRunTime = millis();
+        }
+    }
 }
 
 uint8_t TaskScheduler::GetSourceAddress()
@@ -68,33 +137,6 @@ void TaskScheduler::RunLoop()
      **/
     TaskScheduler::SendMessages();
     TaskScheduler::RecieveMessages();
-}
-
-void TaskScheduler::SendMessages()
-{
-    /**
-     * Iterates over the entire CANTasks array and sends any messages which have been initialized.
-     *
-     * Parameters:
-     *     none
-     * Returns:
-     *     none
-     **/
-    long time;
-    for (int i = 0; i < MAX_TASKS; i++)
-    {
-        time = millis();
-        if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED && CANTasks[i].initialized == true && ((CANTasks[i].lastRunTime == 0) || (time - CANTasks[i].lastRunTime) >= CANTasks[i].task.interval))
-        {
-            j1939.Transmit(CANTasks[i].task.priority,
-                           CANTasks[i].task.PGN,
-                           CANTasks[i].task.srcAddr,
-                           CANTasks[i].task.destAddr,
-                           &CANTasks[i].task.msg[0],
-                           CANTasks[i].task.msgLen);
-            CANTasks[i].lastRunTime = millis();
-        }
-    }
 }
 
 void TaskScheduler::RecieveMessages()
@@ -147,147 +189,6 @@ void TaskScheduler::RecieveMessages()
         // }
         j1939.CANInterpret(&PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
     }
-}
-
-int TaskScheduler::AddCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8_t destAddr, int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN])
-{
-    /**
-     * Configure a new CANTask in the array.
-     *
-     * Parameters:
-     *     priority   (uint8_t): Priority of the message to be sent
-     *     PGN           (long): Message PGN
-     *     srcAddr    (uint8_t): Address of the device sending the message
-     *     destAddr   (uint8_t): Address of the device recieving the message
-     *     msgLen         (int): Length of the message
-     *     interval     (ulong): Number of milliseconds between sending the message
-     *     msg      (uint8_t[]): Message to be sent
-     * Returns:
-     *     firstFree      (int): Index of the newly added CANTask
-     **/
-    int firstFree = FirstFreeInCANTasks();
-    if (firstFree != -1)
-    {
-        TaskScheduler::SetupCANTask(priority, PGN, srcAddr, destAddr, msgLen, interval, msg, firstFree);
-    }
-    return firstFree;
-}
-
-void TaskScheduler::SetupCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8_t destAddr, int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN], int index)
-{
-    /**
-     * Configure a new CANTask in the array with a given index.
-     *
-     * Parameters:
-     *     priority   (uint8_t): Priority of the message to be sent
-     *     PGN           (long): Message PGN
-     *     srcAddr    (uint8_t): Address of the device sending the message
-     *     destAddr   (uint8_t): Address of the device recieving the message
-     *     msgLen         (int): Length of the message
-     *     interval     (ulong): Number of milliseconds between sending the message
-     *     msg      (uint8_t[]): Message to be sent
-     * Returns:
-     *     none
-     **/
-    CANTasks[index].task.priority = priority;
-    CANTasks[index].task.PGN = PGN;
-    CANTasks[index].task.srcAddr = srcAddr;
-    CANTasks[index].task.destAddr = destAddr;
-    CANTasks[index].task.msgLen = msgLen;
-    CANTasks[index].task.interval = interval;
-    for (int i = 0; i < msgLen; i++)
-    {
-        CANTasks[index].task.msg[i] = msg[i];
-    }
-    CANTasks[index].initialized = true;
-    CANTasks[index].lastRunTime = 0;
-}
-
-void TaskScheduler::EnableDriveMessage(void)
-{
-    /**
-     * Enables the Drive Message at INVERTER_CMD_MESSAGE_INDEX
-     *
-     * Parameters:
-     *     none
-     * Returns:
-     *     none
-     **/
-    CANTasks[INVERTER_CMD_MESSAGE_INDEX].initialized = true;
-}
-
-void TaskScheduler::DisableDriveMessage(void)
-{
-    /**
-     * Disables the Drive Message at INVERTER_CMD_MESSAGE_INDEX
-     *
-     * Parameters:
-     *     none
-     * Returns:
-     *     none
-     **/
-    CANTasks[INVERTER_CMD_MESSAGE_INDEX].initialized = false;
-}
-
-void RemoveCANTask(int taskIndex)
-{
-    /**
-     * De-initializes a CANTask in the array.
-     *
-     * Parameters:
-     *     taskIndex   (int): index of the task in CANTasks
-     * Returns:
-     *     none
-     **/
-    CANTasks[taskIndex].initialized = false;
-    CANTasks[taskIndex].lastRunTime = 0;
-}
-
-MsgReturn TaskScheduler::GetMsg(int taskIndex)
-{
-    /**
-     * Gets the msg of the specified task.
-     *
-     * Parameters:
-     *     taskIndex  (int): index of the task in CANTasks
-     * Returns:
-     *     toReturn (struct MsgReturn): returns object with .length and .message properties.
-     **/
-    struct MsgReturn toReturn = {CANTasks[taskIndex].task.msgLen, &CANTasks[taskIndex].task.msg[0]};
-    return toReturn;
-}
-
-void TaskScheduler::UpdateMsg(int taskIndex, int *msg, int msgLen)
-{
-    /**
-     * Updates a specified message in the CANTasks array.
-     *
-     * Parameters:
-     *     taskIndex     (int): index of the task in CANTasks
-     *     msg         (int *): pointer to the msg array
-     *     msgLen        (int): length of msg
-     * Returns:
-     *     none
-     **/
-    for (int i = 0; i < msgLen; i++)
-    {
-        CANTasks[taskIndex].task.msg[i] = msg[i];
-    }
-}
-
-void TaskScheduler::UpdateMsgByte(int taskIndex, int byte, int indexOfByte)
-{
-    /**
-     * Updates a byte in a specified message in the CANTasks array.
-     *
-     * Parameters:
-     *     taskIndex   (int): index of the task in CANTasks
-     *     byte        (int): data to be stored
-     *     indexOfByte (int): index of the message byte
-     * Returns:
-     *     none
-     **/
-    CANTasks[taskIndex].task.msg[indexOfByte] = byte;
 }
 
 bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
@@ -435,7 +336,7 @@ bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
     {
     j1939.Transmit(CANTasks[speedMessageIndex].task.priority,
                    CANTasks[speedMessageIndex].task.PGN,
-                   CANTasks[speedMessageIndex].task.srcAddr,
+                   j1939.GetSourceAddress(),  // Always get current source address
                    CANTasks[speedMessageIndex].task.destAddr,
                    &array[0],
                    J1939_MSGLEN);
@@ -503,4 +404,91 @@ int TaskScheduler::FirstFreeInCANTasks()
         }
     }
     return -1;
+}
+
+void TaskScheduler::EnableDriveMessage(void)
+{
+    /**
+     * Enables the Drive Message at INVERTER_CMD_MESSAGE_INDEX
+     *
+     * Parameters:
+     *     none
+     * Returns:
+     *     none
+     **/
+    CANTasks[INVERTER_CMD_MESSAGE_INDEX].initialized = true;
+}
+
+void TaskScheduler::DisableDriveMessage(void)
+{
+    /**
+     * Disables the Drive Message at INVERTER_CMD_MESSAGE_INDEX
+     *
+     * Parameters:
+     *     none
+     * Returns:
+     *     none
+     **/
+    CANTasks[INVERTER_CMD_MESSAGE_INDEX].initialized = false;
+}
+
+void RemoveCANTask(int taskIndex)
+{
+    /**
+     * De-initializes a CANTask in the array.
+     *
+     * Parameters:
+     *     taskIndex   (int): index of the task in CANTasks
+     * Returns:
+     *     none
+     **/
+    CANTasks[taskIndex].initialized = false;
+    CANTasks[taskIndex].lastRunTime = 0;
+}
+
+MsgReturn TaskScheduler::GetMsg(int taskIndex)
+{
+    /**
+     * Gets the msg of the specified task.
+     *
+     * Parameters:
+     *     taskIndex  (int): index of the task in CANTasks
+     * Returns:
+     *     toReturn (struct MsgReturn): returns object with .length and .message properties.
+     **/
+    struct MsgReturn toReturn = {CANTasks[taskIndex].task.msgLen, &CANTasks[taskIndex].task.msg[0]};
+    return toReturn;
+}
+
+void TaskScheduler::UpdateMsg(int taskIndex, int *msg, int msgLen)
+{
+    /**
+     * Updates a specified message in the CANTasks array.
+     *
+     * Parameters:
+     *     taskIndex     (int): index of the task in CANTasks
+     *     msg         (int *): pointer to the msg array
+     *     msgLen        (int): length of msg
+     * Returns:
+     *     none
+     **/
+    for (int i = 0; i < msgLen; i++)
+    {
+        CANTasks[taskIndex].task.msg[i] = msg[i];
+    }
+}
+
+void TaskScheduler::UpdateMsgByte(int taskIndex, int byte, int indexOfByte)
+{
+    /**
+     * Updates a byte in a specified message in the CANTasks array.
+     *
+     * Parameters:
+     *     taskIndex   (int): index of the task in CANTasks
+     *     byte        (int): data to be stored
+     *     indexOfByte (int): index of the message byte
+     * Returns:
+     *     none
+     **/
+    CANTasks[taskIndex].task.msg[indexOfByte] = byte;
 }
