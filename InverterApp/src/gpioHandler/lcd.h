@@ -1,3 +1,6 @@
+#ifndef LCD_H
+#define LCD_H
+
 using byte = uint8_t;
 
 byte empty[8] = {
@@ -110,4 +113,5 @@ byte bottomLeftSCurve[8] = {
     0x0F,
     0x07,
 };
-     
+
+#endif /* LCD_H */

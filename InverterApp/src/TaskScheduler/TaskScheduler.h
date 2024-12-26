@@ -1,3 +1,6 @@
+#ifndef TASK_SCHEDULER_H
+#define TASK_SCHEDULER_H
+
 #include <stdlib.h>
 #include "../Time/TimeLib.h"
 #include <Arduino.h>
@@ -56,3 +59,5 @@ class TaskScheduler
         InitializedCANTask CANTasks[MAX_TASKS];
         ARD1939 j1939;
 };
+
+#endif /* TASK_SCHEDULER_H */

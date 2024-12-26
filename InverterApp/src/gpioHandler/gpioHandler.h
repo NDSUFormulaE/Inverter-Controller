@@ -1,3 +1,6 @@
+#ifndef GPIO_HANDLER_H
+#define GPIO_HANDLER_H
+
 #include <stdlib.h>
 #include "../Time/TimeLib.h"
 #include <Arduino.h>
@@ -8,7 +11,6 @@
 #define POT_GPIO           A1
 #define LEFT_APPS_GPIO     A2
 #define RIGHT_APPS_GPIO    A3
-
 
 #define CLEAR_FAULT_GPIO   A5
 
@@ -73,3 +75,5 @@ class GPIOHandler
         void LCDDisplaySAE();
         void LcdUpdate();
 };
+
+#endif /* GPIO_HANDLER_H */
