@@ -6,6 +6,9 @@
 #include "CAN_SPEC/PGN.h"
 #include "ARD1939.h"
 #include "Arduino.h"
+#include "../gpioHandler/gpioHandler.h"
+
+extern GPIOHandler gpioMan;
 
 #define d49                             10
 
@@ -1340,12 +1343,6 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       unsigned long SPN = ((SPN_Top << 16) + (SPN_Mid << 8) + SPN_Bottom);
       uint8_t FMI = CAN_Message[4] & 0b11111;
       uint8_t Occ = CAN_Message[5] & 0b1111111;
-      // Serial.print("FAULT CAN 3: ");
-      // Serial.println(CAN_Message[3]);
-      // Serial.print("FAULT CAN 4: ");
-      // Serial.println(CAN_Message[4]);
-      // Serial.print("FAULT CAN 5: ");
-      // Serial.println(CAN_Message[5]);
       UpdateAddFault(SPN, FMI, Occ);
       break;
     }
@@ -1368,10 +1365,6 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
           TP_Buffer[i] = 0xFF;
         }
       }
-      // Serial.print("TP_BAM Recieved PGN: "); 
-      // Serial.print(TP_PGN);
-      // Serial.print(" Num_Bytes: ");
-      // Serial.println(TP_Num_Bytes);
       break;
     }
 
@@ -1556,25 +1549,17 @@ int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
         if(FaultTable[faultIndex].OC < Occurance)
         {
           FaultTable[faultIndex].OC = Occurance;
-          Serial.print("FAULT UPDATE - SPN: ");
-          sprintf(sString, "%lu ", SPN);
-          Serial.print(sString);
-          Serial.print(" FMI: ");
-          Serial.print(FMI);
-          Serial.print(" Occ: ");
-          Serial.println(Occurance);
+          char faultMsg[20];
+          snprintf(faultMsg, sizeof(faultMsg), "S%lu F%d O%d", SPN, FMI, Occurance);
+          gpioMan.UpdateInfo("FAULT UPDATE", faultMsg, true);
         } 
     }
     else
     {
         AddNewFault(SPN, FMI, Occurance);
-        Serial.print("FAULT NEW - SPN: ");
-        sprintf(sString, "%lu ", SPN);
-        Serial.print(sString);
-        Serial.print(" FMI: ");
-        Serial.print(FMI);
-        Serial.print(" Occ: ");
-        Serial.println(Occurance);
+        char faultMsg[20];
+        snprintf(faultMsg, sizeof(faultMsg), "S%lu F%d O%d", SPN, FMI, Occurance);
+        gpioMan.UpdateInfo("FAULT NEW", faultMsg, true);
     }
     return faultIndex;
 }
@@ -1605,7 +1590,6 @@ void ARD1939::ClearFaults(void)
     * Returns:
     *     none
     **/
-  Serial.println("Clearing Bus Faults");
   ARD1939::ClearFaultTable();
   uint8_t priority = 6;
   uint8_t clear_data[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
