@@ -31,7 +31,7 @@ bool GPIOHandler::Init()
     
     return true;
 }
-unsigned long last_clear = 0;
+TickType_t last_clear = 0;
 uint8_t lcd_test = 0;
 
 double randomDouble(double minf, double maxf)
@@ -91,9 +91,10 @@ uint16_t GPIOHandler::GetPedalTorque()
 uint16_t GPIOHandler::GetClearPin()
 {
     uint16_t analogReadVal = analogRead(CLEAR_FAULT_GPIO);
-    if(analogReadVal > 500 && ((millis() - last_clear) > CLEAR_INTERVAL_MILLIS))
+    TickType_t current_ticks = xTaskGetTickCount();
+    if(analogReadVal > 500 && ((current_ticks - last_clear) > CLEAR_INTERVAL_TICKS))
     {
-        last_clear = millis();
+        last_clear = current_ticks;
         return analogReadVal;
     }
     return 0;

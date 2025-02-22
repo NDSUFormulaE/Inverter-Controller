@@ -1,6 +1,6 @@
 #include <stdlib.h>
-#include "../Time/TimeLib.h"
 #include <Arduino.h>
+#include "..//FreeRTOS/src/Arduino_FreeRTOS.h"
 #include "../TaskScheduler/TaskScheduler.h"
 
 #define POT_GPIO           A1
@@ -22,6 +22,7 @@
 #define MAX_TORQUE_VAL (TORQUE_OFFSET + TORQUE_PERC_MAX) * 2
 
 #define CLEAR_INTERVAL_MILLIS 5000
+#define CLEAR_INTERVAL_TICKS pdMS_TO_TICKS(CLEAR_INTERVAL_MILLIS)
 
 //If displays connected, uncomment next line.
 #define DISPLAYS_ENABLED
