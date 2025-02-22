@@ -51,50 +51,52 @@ void setup()
         resetFunc(); // If CAN Controller doesnt init correctly, wait 500ms then try again.
     }
 
-    // xTaskCreate(
-    //     TaskClearFaults,
-    //     "ClearFaults",
-    //     128,
-    //     NULL,
-    //     8,
-    //     NULL
-    // );
+    xTaskCreate(
+        TaskClearFaults,
+        "ClearFaults",
+        128,
+        NULL,
+        6,
+        NULL
+    );
 
-    // xTaskCreate(
-    //     TaskUpdateSevenSegments,
-    //     "UpdateSevenSegments",
-    //     128,
-    //     NULL,
-    //     7,
-    //     NULL
-    // );
+#ifdef DISPLAYS_ENABLED
+    xTaskCreate(
+        TaskUpdateSevenSegments,
+        "UpdateSevenSegments",
+        128,
+        NULL,
+        7,
+        NULL
+    );
 
-    // xTaskCreate(
-    //     TaskUpdateLCDs,
-    //     "UpdateLCDs",
-    //     128,
-    //     NULL,
-    //     10,
-    //     NULL
-    // );
+    xTaskCreate(
+        TaskUpdateLCDs,
+        "UpdateLCDs",
+        128,
+        NULL,
+        6,
+        NULL
+    );
+#endif
 
     xTaskCreate(
         TaskCANLoop,
         "CANLoop",
         256,
         NULL,
-        7,
+        4,
         NULL
     );
 
-    // xTaskCreate(
-    //     TaskInverterStateMachineControl,
-    //     "InverterStateMachineControl",
-    //     128,
-    //     NULL,
-    //     8,
-    //     NULL
-    // );
+    xTaskCreate(
+        TaskInverterStateMachineControl,
+        "InverterStateMachineControl",
+        128,
+        NULL,
+        5,
+        NULL
+    );
 
     Serial.println("Initialized");
 }
@@ -110,12 +112,17 @@ void TaskClearFaults(void * pvParameters)
     (void) pvParameters;
     for (;;)
     {
-        uint16_t ClearPinVal = gpioMan.GetClearPin(); 
+        uint16_t ClearPinVal = gpioMan.GetClearPin();
+        #ifdef AUTO_CLEAR_CAN_FAULTS 
         if (ClearPinVal || InverterState.MCU_State == MCU_FAULT_CLASSA || InverterState.MCU_State == MCU_FAULT_CLASSB)
+        #else
+        if (ClearPinVal)
+        #endif
         {
             taskMan.ClearInverterFaults();
         }
-        vTaskDelay(1); // 15ms x 50 = 750ms
+        // Try to make these delays powers of 2.
+        vTaskDelay(pdMS_TO_TICKS(2048));
     }
 }
 
@@ -125,7 +132,8 @@ void TaskUpdateSevenSegments(void * pvParameters)
     for (;;)
     {
         gpioMan.UpdateSevenSegments();
-        vTaskDelay(3); // 15ms x 50 = 750ms
+        // Try to make these delays powers of 2.
+        vTaskDelay(pdMS_TO_TICKS(512));
     }
 }
 
@@ -135,7 +143,8 @@ void TaskUpdateLCDs(void * pvParameters)
     for (;;)
     {
         gpioMan.UpdateLCDs();
-        vTaskDelay(70); // 15ms x 50 = 750ms
+        // Try to make these delays powers of 2.
+        vTaskDelay(pdMS_TO_TICKS(768));
     }
 }
 
@@ -144,10 +153,11 @@ void TaskCANLoop(void * pvParameters)
     (void) pvParameters;
     for (;;)
     {
-        taskMan.UpdateSpeed(gpioMan.GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
+        // taskMan.UpdateSpeed(gpioMan.GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
         // taskMan.UpdateSpeed(gpioMan.GetPedalTorque(), INVERTER_CMD_MESSAGE_INDEX);
         taskMan.RunLoop();
-        vTaskDelay(1);
+        // Try to make these delays powers of 2.
+        vTaskDelay(CAN_CONTROL_LOOP_INTERVAL_TICKS);
     }
 }
 
@@ -272,6 +282,7 @@ void TaskInverterStateMachineControl(void * pvParameters)
                 InitialState = false;
             }
         }
-        vTaskDelay(10); // 15ms * 10 = 150ms
+        // Try to make these delays powers of 2.
+        vTaskDelay(pdMS_TO_TICKS(256));
     }
 }
