@@ -10,23 +10,15 @@
 
 //// Subsystem imports
 #include "src/gpioHandler/gpioHandler.h"
-// #include "src/TaskScheduler/TaskScheduler.h" // imported in gpioHandler.h Arduino IDE has a stroke if also defined here
+#include "src/TaskScheduler/TaskScheduler.h"
 
 //// Definitions
 // Reset function
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
-#define InverterSA 0xA2 // Shouldn't be hard coded
 uint8_t LastCommandedInverterState = MCU_STDBY;
 bool InitialState = true;
 bool InverterPowerOffState = false;
 bool InverterNormalOpState = false;
-
-// Common TaskScheduler/GPIOHandler pointer struct
-struct ManagerPointers
-{
-    TaskScheduler* TaskPoint;
-    GPIOHandler* GPIOPoint;
-};
 
 // Task Defines
 void TaskInverterStateMachineControl(void * pvParameters);
@@ -98,7 +90,7 @@ void setup()
         NULL
     );
 
-    Serial.println("Initialized");
+    Serial.println("Application Stack Initialized");
 }
 
 void loop()
@@ -253,7 +245,6 @@ void TaskInverterStateMachineControl(void * pvParameters)
                         Serial.println("Inverter in Class A Fault State");
                         Serial.println("Commanding Inverter to Standby");
                     }
-                    //taskMan.ClearInverterFaults();
                     LastCommandedInverterState = MCU_STDBY;
                     break;
                 case MCU_FAULT_CLASSB:
@@ -262,7 +253,6 @@ void TaskInverterStateMachineControl(void * pvParameters)
                         Serial.println("Inverter in Class B Fault State");
                         Serial.println("Commanding Inverter to Standby");
                     }
-                    //taskMan.ClearInverterFaults();
                     LastCommandedInverterState = MCU_STDBY;
                     break;
                 case MCU_ADV_DIAG_CLASSA:

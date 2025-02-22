@@ -2,7 +2,7 @@
 #include "../ARD1939/CAN_SPEC/StateTransition.h"
 #include "../ARD1939/CAN_SPEC/MotorControlUnitState.h"
 
-InitializedCANTask CANTasks[MAX_TASKS];
+InitializedCANTask CANTasks[MAX_CAN_TASKS];
 ARD1939 j1939;
 extern struct CANVariables InverterState;
 
@@ -74,7 +74,7 @@ void TaskScheduler::SendMessages()
      *     none
      **/
     TickType_t current_ticks;
-    for (int i = 0; i < MAX_TASKS; i++)
+    for (int i = 0; i < MAX_CAN_TASKS; i++)
     {
         current_ticks = xTaskGetTickCount();
         if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED && CANTasks[i].initialized == true && ((CANTasks[i].lastRunTime == 0) || (current_ticks - CANTasks[i].lastRunTime) >= CANTasks[i].task.interval))
@@ -483,7 +483,7 @@ int TaskScheduler::FirstFreeInCANTasks()
      * Returns:
      *     i (int): index of the first free object in array
      **/
-    for (int i = 0; i < MAX_TASKS; i++)
+    for (int i = 0; i < MAX_CAN_TASKS; i++)
     {
         if (CANTasks[i].initialized == false)
         {
