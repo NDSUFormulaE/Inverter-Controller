@@ -40,7 +40,11 @@ int TaskScheduler::Init()
 
     uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
     uint8_t DefaultTorqueArray[] = {0xF4, 0x18, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
+    #ifndef USE_APPS
     TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, INVERTER_CMD_INVERVAL_TICKS, DefaultSpeedArray, INVERTER_CMD_MESSAGE_INDEX);
+    #else
+    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, INVERTER_CMD_INVERVAL_TICKS, DefaultTorqueArray, INVERTER_CMD_MESSAGE_INDEX);
+    #endif
     return 0;
 }
 
@@ -116,7 +120,7 @@ void TaskScheduler::RecieveMessages()
     InverterState.CAN_Bus_Status = j1939.Operate(&MsgId, &PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
     if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FAILED)
     {
-        // Serial.println("Address Claim Failed");
+        Serial.println("Address Claim Failed, resetting CAN stack.");
         TaskScheduler::Init();
     }
     else if (TaskScheduler::GetSourceAddress() == 0xFE && InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED)

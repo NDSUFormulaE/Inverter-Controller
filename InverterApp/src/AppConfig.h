@@ -1,6 +1,13 @@
 #ifndef APP_CONFIG_H
 #define APP_CONFIG_H
 
+// ---------------------------- POWER MODE CONFIG -------------------------------
+
+// Enable this value when we want to change the configuration to:
+// - Send torque commands to the inverter instead of sending speed commands.
+// - Use the accellerator pedals instead of a rotary potentiometer. 
+#define USE_APPS
+
 // ---------------------------- CAN CONFIG --------------------------------------
 // Increase this if we actually need more than 1 task.
 enum {MAX_CAN_TASKS = 1};
@@ -22,7 +29,20 @@ enum {MAX_CAN_TASKS = 1};
 // ---------------------------- GPIO CONFIG -------------------------------------
 
 #define POT_GPIO           A1
+#define LEFT_APPS_GPIO     A2
+#define RIGHT_APPS_GPIO    A3
+
 #define CLEAR_FAULT_GPIO   A5
+
+//minimum voltage 0.206V
+#define LEFT_APPS_MIN_ADC 63
+//Maximum voltage 1.157V
+#define LEFT_APPS_MAX_ADC 358
+
+//minimum voltage 0.492V
+#define RIGHT_APPS_MIN_ADC 152
+//Maximum voltage 1.496V
+#define RIGHT_APPS_MAX_ADC 494
 
 #define SPEED_OFFSET   16000
 #define SPEED_MIN_RPM      0
@@ -34,7 +54,7 @@ enum {MAX_CAN_TASKS = 1};
 // 0% -> 0.7%
 #define TORQUE_OFFSET      16000
 #define TORQUE_PERC_MIN    0
-#define TORQUE_PERC_MAX    15
+#define TORQUE_PERC_MAX    5
 
 #define MIN_TORQUE_VAL (TORQUE_OFFSET + TORQUE_PERC_MIN) * 2
 #define MAX_TORQUE_VAL (TORQUE_OFFSET + TORQUE_PERC_MAX) * 2

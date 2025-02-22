@@ -44,7 +44,11 @@ void GPIOHandler::UpdateLCDs() {
 }
 
 void GPIOHandler::UpdateSevenSegments() {
-  speedDisplay.showNumber(int(InverterState.Abs_Machine_Speed));
+  #ifndef USE_APPS
+    speedDisplay.showNumber(int(InverterState.Abs_Machine_Speed));
+  #else
+    speedDisplay.showNumber(int(InverterState.Avg_Abs_Torque));
+  #endif
   batteryDisplay.showNumber(InverterState.DC_Bus_Voltage);
   motorTempDisplay.showNumber(int((InverterState.Motor_Temp_1 + InverterState.Motor_Temp_2 + InverterState.Motor_Temp_3)/3));
   coolantTempDisplay.showNumber(InverterState.Inverter_Coolant_Temp);
@@ -83,8 +87,31 @@ uint16_t GPIOHandler::GetPedalSpeed()
 
 uint16_t GPIOHandler::GetPedalTorque()
 {
-  int potent_read = analogRead(POT_GPIO);
-  uint16_t mapped_val = map(potent_read, 0, 1023, MIN_TORQUE_VAL, MAX_TORQUE_VAL);
+  int left_apps_read = analogRead(LEFT_APPS_GPIO);
+  if(left_apps_read > LEFT_APPS_MAX_ADC) {
+    left_apps_read = LEFT_APPS_MAX_ADC;
+  }
+  if(left_apps_read < LEFT_APPS_MIN_ADC) {
+    left_apps_read = LEFT_APPS_MIN_ADC;
+  }
+  int right_apps_read = analogRead(RIGHT_APPS_GPIO);
+  if(right_apps_read > RIGHT_APPS_MAX_ADC) {
+    right_apps_read = RIGHT_APPS_MAX_ADC;
+  }
+  if(right_apps_read < RIGHT_APPS_MIN_ADC) {
+    right_apps_read = RIGHT_APPS_MIN_ADC;
+  }
+  long mapped_left_val = map(left_apps_read, LEFT_APPS_MIN_ADC, LEFT_APPS_MAX_ADC, 0, 100);
+  long mapped_right_val = map(right_apps_read, RIGHT_APPS_MIN_ADC, RIGHT_APPS_MAX_ADC, 0, 100);
+  // Serial.print("Left: "); Serial.print(mapped_left_val); Serial.print(" Right: "); Serial.println(mapped_right_val);
+  long diff = abs(mapped_right_val - mapped_left_val);
+  if(diff > 10){
+    // Serial.print("Difference between left/right APPS is "); Serial.print(diff); Serial.println("%. Reading invalid, requesting 0\% instead.");
+    return 0;
+  }
+  long apps_avg = (mapped_left_val + mapped_right_val) / 2;
+  //Serial.print("Average Left/Right APPS Torque: "); Serial.print(apps_avg); Serial.println("%");
+  uint16_t mapped_val = mapToRange(apps_avg, 0, 100, MIN_TORQUE_VAL, MAX_TORQUE_VAL);
   return mapped_val;
 }
 
