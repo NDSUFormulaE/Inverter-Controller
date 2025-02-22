@@ -46,37 +46,37 @@ void setup()
     Serial.begin(115200);
     if ((taskMan.Init() != 0) || (gpioMan.Init() == false))
     {
-        delay(500);
+        vTaskDelay(pdMS_TO_TICKS(500));
         Serial.println("Resetting");
         resetFunc(); // If CAN Controller doesnt init correctly, wait 500ms then try again.
     }
 
-    xTaskCreate(
-        TaskClearFaults,
-        "ClearFaults",
-        128,
-        NULL,
-        8,
-        NULL
-    );
+    // xTaskCreate(
+    //     TaskClearFaults,
+    //     "ClearFaults",
+    //     128,
+    //     NULL,
+    //     8,
+    //     NULL
+    // );
 
-    xTaskCreate(
-        TaskUpdateSevenSegments,
-        "UpdateSevenSegments",
-        128,
-        NULL,
-        7,
-        NULL
-    );
+    // xTaskCreate(
+    //     TaskUpdateSevenSegments,
+    //     "UpdateSevenSegments",
+    //     128,
+    //     NULL,
+    //     7,
+    //     NULL
+    // );
 
-    xTaskCreate(
-        TaskUpdateLCDs,
-        "UpdateLCDs",
-        128,
-        NULL,
-        10,
-        NULL
-    );
+    // xTaskCreate(
+    //     TaskUpdateLCDs,
+    //     "UpdateLCDs",
+    //     128,
+    //     NULL,
+    //     10,
+    //     NULL
+    // );
 
     xTaskCreate(
         TaskCANLoop,
@@ -87,14 +87,14 @@ void setup()
         NULL
     );
 
-    xTaskCreate(
-        TaskInverterStateMachineControl,
-        "InverterStateMachineControl",
-        128,
-        NULL,
-        8,
-        NULL
-    );
+    // xTaskCreate(
+    //     TaskInverterStateMachineControl,
+    //     "InverterStateMachineControl",
+    //     128,
+    //     NULL,
+    //     8,
+    //     NULL
+    // );
 
     Serial.println("Initialized");
 }
