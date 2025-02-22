@@ -18,7 +18,7 @@ int TaskScheduler::Init()
      *    none
      **/
     // Initialize the J1939 protocol including CAN settings
-    int j1939_init = j1939.Init(SYSTEM_TIME);
+    int j1939_init = j1939.Init(CAN_CONTROL_LOOP_INTERVAL_MS);
     if (j1939_init != 0)
     {
         return j1939_init;
@@ -40,7 +40,7 @@ int TaskScheduler::Init()
 
     uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
     uint8_t DefaultTorqueArray[] = {0xF4, 0x18, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
-    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0x03, 0xA2, 8, 15, DefaultSpeedArray, INVERTER_CMD_MESSAGE_INDEX);
+    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, INVERTER_CMD_INVERVAL_TICKS, DefaultSpeedArray, INVERTER_CMD_MESSAGE_INDEX);
     return 0;
 }
 
@@ -59,8 +59,8 @@ void TaskScheduler::RunLoop()
      * Returns:
      *     none
      **/
-    TaskScheduler::SendMessages();
     TaskScheduler::RecieveMessages();
+    TaskScheduler::SendMessages();
 }
 
 void TaskScheduler::SendMessages()
@@ -73,19 +73,19 @@ void TaskScheduler::SendMessages()
      * Returns:
      *     none
      **/
-    long time;
+    TickType_t current_ticks;
     for (int i = 0; i < MAX_TASKS; i++)
     {
-        time = millis();
-        if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED && CANTasks[i].initialized == true && ((CANTasks[i].lastRunTime == 0) || (time - CANTasks[i].lastRunTime) >= CANTasks[i].task.interval))
+        current_ticks = xTaskGetTickCount();
+        if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED && CANTasks[i].initialized == true && ((CANTasks[i].lastRunTime == 0) || (current_ticks - CANTasks[i].lastRunTime) >= CANTasks[i].task.interval))
         {
             j1939.Transmit(CANTasks[i].task.priority,
                            CANTasks[i].task.PGN,
-                           CANTasks[i].task.srcAddr,
+                           TaskScheduler::GetSourceAddress(),
                            CANTasks[i].task.destAddr,
                            &CANTasks[i].task.msg[0],
                            CANTasks[i].task.msgLen);
-            CANTasks[i].lastRunTime = millis();
+            CANTasks[i].lastRunTime = current_ticks;
         }
     }
 }
@@ -111,38 +111,32 @@ void TaskScheduler::RecieveMessages()
     long PGN;
     uint8_t Msg[J1939_MSGLEN];
     char sString[80];
+    // DEBUG_INIT();
 
     InverterState.CAN_Bus_Status = j1939.Operate(&MsgId, &PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
     if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FAILED)
     {
+        // Serial.println("Address Claim Failed");
         TaskScheduler::Init();
     }
-    else if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_INPROGRESS)
+    else if (TaskScheduler::GetSourceAddress() == 0xFE && InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED)
     {
-        // Serial.println("Address Claim In Progress");
-        InverterState.CAN_Bus_Status = ADDRESSCLAIM_FINISHED;
+        Serial.println("Claimed Null Address, resetting CAN stack.");
+        TaskScheduler::Init();
     }
     // J1939_MSG_APP means normal Data Packet && J1939_MSG_PROTOCOL means Transport Protocol Announcement.
     if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED && (MsgId == J1939_MSG_APP || MsgId == J1939_MSG_PROTOCOL))
     {
-        // if(MsgLen != 0 ){
-        //     sprintf(sString, "PGN: 0x%X Src: 0x%X Dest: 0x%X Len: %i ", (int)PGN, SrcAddr, DestAddr, MsgLen);
-        //     Serial.print(sString);
-        //     Serial.print("Data: ");
-        //     for(int nIndex = 0; nIndex < MsgLen; nIndex++)
-        //     {
-        //     sprintf(sString, "0x%X ", Msg[nIndex]);
-        //     Serial.print(sString);
-
-        //     }// end for
-        //     Serial.print("\n\r");
-        //     MsgId = J1939_MSG_NONE;
-        // }
+        // DEBUG_PRINTHEX("Source Address: ", SrcAddr);
+        // DEBUG_PRINTHEX("Destination Address: ", DestAddr);
+        // DEBUG_PRINTHEX("Priority: ", Priority);
+        // DEBUG_PRINTHEX("PGN: ", PGN);
+        // DEBUG_PRINTARRAYHEX("Msg: ", Msg, MsgLen);
         j1939.CANInterpret(&PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
     }
 }
 
-int TaskScheduler::AddCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8_t destAddr, int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN])
+int TaskScheduler::AddCANTask(uint8_t priority, long PGN, uint8_t destAddr, int msgLen, TickType_t interval_ticks, uint8_t msg[J1939_MSGLEN])
 {
     /**
      * Configure a new CANTask in the array.
@@ -161,12 +155,12 @@ int TaskScheduler::AddCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8
     int firstFree = FirstFreeInCANTasks();
     if (firstFree != -1)
     {
-        TaskScheduler::SetupCANTask(priority, PGN, srcAddr, destAddr, msgLen, interval, msg, firstFree);
+        TaskScheduler::SetupCANTask(priority, PGN, destAddr, msgLen, interval_ticks, msg, firstFree);
     }
     return firstFree;
 }
 
-void TaskScheduler::SetupCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8_t destAddr, int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN], int index)
+void TaskScheduler::SetupCANTask(uint8_t priority, long PGN, uint8_t destAddr, int msgLen, TickType_t interval_ticks, uint8_t msg[J1939_MSGLEN], int index)
 {
     /**
      * Configure a new CANTask in the array with a given index.
@@ -184,10 +178,9 @@ void TaskScheduler::SetupCANTask(uint8_t priority, long PGN, uint8_t srcAddr, ui
      **/
     CANTasks[index].task.priority = priority;
     CANTasks[index].task.PGN = PGN;
-    CANTasks[index].task.srcAddr = srcAddr;
     CANTasks[index].task.destAddr = destAddr;
     CANTasks[index].task.msgLen = msgLen;
-    CANTasks[index].task.interval = interval;
+    CANTasks[index].task.interval = interval_ticks;
     for (int i = 0; i < msgLen; i++)
     {
         CANTasks[index].task.msg[i] = msg[i];
@@ -428,7 +421,7 @@ bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
     {
     j1939.Transmit(CANTasks[speedMessageIndex].task.priority,
                    CANTasks[speedMessageIndex].task.PGN,
-                   CANTasks[speedMessageIndex].task.srcAddr,
+                   TaskScheduler::GetSourceAddress(),
                    CANTasks[speedMessageIndex].task.destAddr,
                    &array[0],
                    J1939_MSGLEN);
@@ -490,7 +483,7 @@ int TaskScheduler::FirstFreeInCANTasks()
      * Returns:
      *     i (int): index of the first free object in array
      **/
-    for (int i = 1; i < MAX_TASKS; i++)
+    for (int i = 0; i < MAX_TASKS; i++)
     {
         if (CANTasks[i].initialized == false)
         {
