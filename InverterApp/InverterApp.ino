@@ -144,9 +144,12 @@ void TaskCANLoop(void * pvParameters)
 {
     (void) pvParameters;
     for (;;)
-    {
-        // taskMan.UpdateSpeed(gpioMan.GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
-        // taskMan.UpdateSpeed(gpioMan.GetPedalTorque(), INVERTER_CMD_MESSAGE_INDEX);
+    {   
+        #ifndef USE_APPS
+            taskMan.UpdateSpeed(gpioMan.GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
+        #else
+            taskMan.UpdateSpeed(gpioMan.GetPedalTorque(), INVERTER_CMD_MESSAGE_INDEX);
+        #endif
         taskMan.RunLoop();
         // Try to make these delays powers of 2.
         vTaskDelay(CAN_CONTROL_LOOP_INTERVAL_TICKS);
