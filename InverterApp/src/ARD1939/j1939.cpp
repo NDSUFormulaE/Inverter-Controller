@@ -1551,9 +1551,10 @@ int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
     **/
     int faultIndex = isFaultInArray(SPN, FMI);
     char sString[30];
-    if(faultIndex > -1)
-    {
-        if(FaultTable[faultIndex].OC < Occurance)
+    if (FaultTable[faultIndex].active != 0){
+      if(faultIndex > -1)
+      {
+        if (FaultTable[faultIndex].OC != Occurance && Occurance != 0)
         {
           FaultTable[faultIndex].OC = Occurance;
           Serial.print("FAULT UPDATE - SPN: ");
@@ -1563,10 +1564,10 @@ int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
           Serial.print(FMI);
           Serial.print(" Occ: ");
           Serial.println(Occurance);
-        } 
-    }
-    else
-    {
+        }
+      }
+      else
+      {
         AddNewFault(SPN, FMI, Occurance);
         Serial.print("FAULT NEW - SPN: ");
         sprintf(sString, "%lu ", SPN);
@@ -1575,6 +1576,7 @@ int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
         Serial.print(FMI);
         Serial.print(" Occ: ");
         Serial.println(Occurance);
+      }
     }
     return faultIndex;
 }
