@@ -1,21 +1,20 @@
+#ifndef TASK_SCHEDULER_H
+#define TASK_SCHEDULER_H
 #include <stdlib.h>
-#include "../Time/TimeLib.h"
 #include <Arduino.h>
+#include "../FreeRTOS/src/Arduino_FreeRTOS.h"
 
 #include "../ARD1939/ARD1939.h"
 #include "../ARD1939/CAN_SPEC/PGN.h"
-
-enum {MAX_TASKS = 15};
-#define INVERTER_CMD_MESSAGE_INDEX 0
+#include "../AppConfig.h"
 
 struct CANTask
 {
     uint8_t priority;
     long PGN;
-    uint8_t srcAddr;
     uint8_t destAddr;
     int msgLen;
-    unsigned long interval;
+    TickType_t interval;
     uint8_t msg[J1939_MSGLEN];
 };
 
@@ -23,7 +22,7 @@ struct InitializedCANTask
 {
     CANTask task;
     bool initialized = false;
-    unsigned long lastRunTime = 0;
+    TickType_t lastRunTime = 0;
 };
 
 struct MsgReturn
@@ -36,7 +35,7 @@ class TaskScheduler
 {
     public:
         int Init();
-        int AddCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8_t destAddr, int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN]);
+        int AddCANTask(uint8_t priority, long PGN, uint8_t destAddr, int msgLen, TickType_t interval_ticks, uint8_t msg[J1939_MSGLEN]);
         void RemoveCANTask(int taskIndex);
         MsgReturn GetMsg(int taskIndex);
         void UpdateMsg(int taskIndex, int msg[], int msgLen);
@@ -52,7 +51,8 @@ class TaskScheduler
         void SendMessages();
         void RecieveMessages();
         int FirstFreeInCANTasks();
-        void SetupCANTask(uint8_t priority, long PGN, uint8_t srcAddr, uint8_t destAddr, int msgLen, unsigned long interval, uint8_t msg[J1939_MSGLEN], int index);
-        InitializedCANTask CANTasks[MAX_TASKS];
+        void SetupCANTask(uint8_t priority, long PGN, uint8_t destAddr, int msgLen, TickType_t interval_ticks, uint8_t msg[J1939_MSGLEN], int index);
+        InitializedCANTask CANTasks[MAX_CAN_TASKS];
         ARD1939 j1939;
 };
+#endif /* TASK_SCHEDULER_H */

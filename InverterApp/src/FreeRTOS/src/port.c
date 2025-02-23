@@ -704,36 +704,37 @@ void prvSetupTimerInterrupt( void )
 /*
  * Setup Timer0 compare match A to generate a tick interrupt.
  */
-static void prvSetupTimerInterrupt( void )
+// Based off this example https://www.arduinoslovakia.eu/blog/2017/9/ctc-timer-v-mikrokontroleri-atmega2560?lang=en#:~:text=Examples,frequency%20can%20be%20set%20directly.
+#define PRESCALER            1024
+
+// For register TCCR0A:
+#define NO_PWM              (0 << COM0A1) | (0 << COM0A0) | (0 << COM0B1) | (0 << COM0B0)
+#define MODE_CTC_TCCR0A     (1 << WGM01) | (0 << WGM00)
+
+// For register TCCR0B:
+#define MODE_CTC_TCCR0B     (0 << WGM02)
+#define PRESCALER_1024      (1 << CS02) | (0 << CS01) | (1 << CS00)
+
+// For register TIMSK0:
+#define INTERRUPT_AT_TOP    (1 << OCIE0A)
+
+void prvSetupTimerInterrupt( void )
 {
-uint32_t ulCompareMatch;
-uint8_t ucLowByte;
+    // In case Arduino platform has pre-configured the timer,
+    // disable it before re-configuring here to avoid unpredicted results:
+    TIMSK0 = 0;
 
-    /* Using 8bit Timer0 to generate the tick. Correct fuses must be
-    selected for the configCPU_CLOCK_HZ clock.*/
+    // Now configure the timer:
+    TCCR0A = NO_PWM | MODE_CTC_TCCR0A;
+    TCCR0B = MODE_CTC_TCCR0B | PRESCALER_1024;
+    OCR0A = portTICK_PERIOD_MS;
 
-    ulCompareMatch = configCPU_CLOCK_HZ / configTICK_RATE_HZ;
+    // Prevent missing the top and going into a possibly long wait until wrapping around:
+    TCNT0 = 0;
 
-    /* We only have 8 bits so have to scale 1024 to get our required tick rate. */
-    ulCompareMatch /= portCLOCK_PRESCALER;
-
-    /* Adjust for correct value. */
-    ulCompareMatch -= ( uint32_t ) 1;
-
-    /* Setup compare match value for compare match A. Interrupts are disabled
-    before this is called so we need not worry here. */
-    ucLowByte = ( uint8_t ) ( ulCompareMatch & ( uint32_t ) 0xff );
-    portOCRL = ucLowByte;
-
-    /* Setup clock source and compare match behaviour. */
-    portTCCRa = portCLEAR_COUNTER_ON_MATCH;
-    portTCCRb = portPRESCALE_1024;
-
-
-    /* Enable the interrupt - this is okay as interrupt are currently globally disabled. */
-    ucLowByte = portTIMSK;
-    ucLowByte |= portCOMPARE_MATCH_A_INTERRUPT_ENABLE;
-    portTIMSK = ucLowByte;
+    // At this point the global interrupt flag is NOT YET enabled,
+    // so you're NOT starting to get the ISR calls until FreeRTOS enables it just before launching the scheduler.
+    TIMSK0 = INTERRUPT_AT_TOP;
 }
 
 #endif

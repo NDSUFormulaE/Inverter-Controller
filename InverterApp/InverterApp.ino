@@ -10,23 +10,15 @@
 
 //// Subsystem imports
 #include "src/gpioHandler/gpioHandler.h"
-// #include "src/TaskScheduler/TaskScheduler.h" // imported in gpioHandler.h Arduino IDE has a stroke if also defined here
+#include "src/TaskScheduler/TaskScheduler.h"
 
 //// Definitions
 // Reset function
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
-#define InverterSA 0xA2 // Shouldn't be hard coded
 uint8_t LastCommandedInverterState = MCU_STDBY;
 bool InitialState = true;
 bool InverterPowerOffState = false;
 bool InverterNormalOpState = false;
-
-// Common TaskScheduler/GPIOHandler pointer struct
-struct ManagerPointers
-{
-    TaskScheduler* TaskPoint;
-    GPIOHandler* GPIOPoint;
-};
 
 // Task Defines
 void TaskInverterStateMachineControl(void * pvParameters);
@@ -46,7 +38,7 @@ void setup()
     Serial.begin(115200);
     if ((taskMan.Init() != 0) || (gpioMan.Init() == false))
     {
-        delay(500);
+        vTaskDelay(pdMS_TO_TICKS(500));
         Serial.println("Resetting");
         resetFunc(); // If CAN Controller doesnt init correctly, wait 500ms then try again.
     }
@@ -56,10 +48,11 @@ void setup()
         "ClearFaults",
         128,
         NULL,
-        8,
+        6,
         NULL
     );
 
+#ifdef DISPLAYS_ENABLED
     xTaskCreate(
         TaskUpdateSevenSegments,
         "UpdateSevenSegments",
@@ -74,16 +67,17 @@ void setup()
         "UpdateLCDs",
         128,
         NULL,
-        10,
+        6,
         NULL
     );
+#endif
 
     xTaskCreate(
         TaskCANLoop,
         "CANLoop",
         256,
         NULL,
-        7,
+        4,
         NULL
     );
 
@@ -92,11 +86,11 @@ void setup()
         "InverterStateMachineControl",
         128,
         NULL,
-        8,
+        5,
         NULL
     );
 
-    Serial.println("Initialized");
+    Serial.println("Application Stack Initialized");
 }
 
 void loop()
@@ -110,12 +104,17 @@ void TaskClearFaults(void * pvParameters)
     (void) pvParameters;
     for (;;)
     {
-        uint16_t ClearPinVal = gpioMan.GetClearPin(); 
+        uint16_t ClearPinVal = gpioMan.GetClearPin();
+        #ifdef AUTO_CLEAR_CAN_FAULTS 
         if (ClearPinVal || InverterState.MCU_State == MCU_FAULT_CLASSA || InverterState.MCU_State == MCU_FAULT_CLASSB)
+        #else
+        if (ClearPinVal)
+        #endif
         {
             taskMan.ClearInverterFaults();
         }
-        vTaskDelay(1); // 15ms x 50 = 750ms
+        // Try to make these delays powers of 2.
+        vTaskDelay(pdMS_TO_TICKS(2048));
     }
 }
 
@@ -125,7 +124,8 @@ void TaskUpdateSevenSegments(void * pvParameters)
     for (;;)
     {
         gpioMan.UpdateSevenSegments();
-        vTaskDelay(3); // 15ms x 50 = 750ms
+        // Try to make these delays powers of 2.
+        vTaskDelay(pdMS_TO_TICKS(512));
     }
 }
 
@@ -135,7 +135,8 @@ void TaskUpdateLCDs(void * pvParameters)
     for (;;)
     {
         gpioMan.UpdateLCDs();
-        vTaskDelay(70); // 15ms x 50 = 750ms
+        // Try to make these delays powers of 2.
+        vTaskDelay(pdMS_TO_TICKS(768));
     }
 }
 
@@ -144,10 +145,11 @@ void TaskCANLoop(void * pvParameters)
     (void) pvParameters;
     for (;;)
     {
-        taskMan.UpdateSpeed(gpioMan.GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
+        // taskMan.UpdateSpeed(gpioMan.GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
         // taskMan.UpdateSpeed(gpioMan.GetPedalTorque(), INVERTER_CMD_MESSAGE_INDEX);
         taskMan.RunLoop();
-        vTaskDelay(1);
+        // Try to make these delays powers of 2.
+        vTaskDelay(CAN_CONTROL_LOOP_INTERVAL_TICKS);
     }
 }
 
@@ -243,7 +245,6 @@ void TaskInverterStateMachineControl(void * pvParameters)
                         Serial.println("Inverter in Class A Fault State");
                         Serial.println("Commanding Inverter to Standby");
                     }
-                    //taskMan.ClearInverterFaults();
                     LastCommandedInverterState = MCU_STDBY;
                     break;
                 case MCU_FAULT_CLASSB:
@@ -252,7 +253,6 @@ void TaskInverterStateMachineControl(void * pvParameters)
                         Serial.println("Inverter in Class B Fault State");
                         Serial.println("Commanding Inverter to Standby");
                     }
-                    //taskMan.ClearInverterFaults();
                     LastCommandedInverterState = MCU_STDBY;
                     break;
                 case MCU_ADV_DIAG_CLASSA:
@@ -272,6 +272,7 @@ void TaskInverterStateMachineControl(void * pvParameters)
                 InitialState = false;
             }
         }
-        vTaskDelay(10); // 15ms * 10 = 150ms
+        // Try to make these delays powers of 2.
+        vTaskDelay(pdMS_TO_TICKS(256));
     }
 }

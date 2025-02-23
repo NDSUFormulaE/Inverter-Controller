@@ -39,13 +39,15 @@
 
 #define SA_PREFERRED                      	0x03
 #define ADDRESSRANGEBOTTOM                	0x04
-#define ADDRESSRANGETOP                   	247
+// Set this lower than the inverter's address, since we wont ever
+// have enough devices on the bus to need this whole range.
+#define ADDRESSRANGETOP                   	0xA1
 
 #define GLOBALADDRESS                    	255
 #define NULLADDRESS                      	254
 
 // NAME Fields Default 
-#define NAME_IDENTITY_NUMBER              	0x000000
+#define NAME_IDENTITY_NUMBER              	0x000001
 #define NAME_MANUFACTURER_CODE            	0xFFF
 #define NAME_FUNCTION_INSTANCE            	0
 #define NAME_ECU_INSTANCE                 	0x00

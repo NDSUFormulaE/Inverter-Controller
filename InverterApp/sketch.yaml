@@ -1,0 +1,11 @@
+profiles:
+  mega2560:
+    notes: Main Inverter Controller Board
+    fqbn: arduino:avr:mega
+    platforms:
+     - platform: arduino:avr (1.8.6)
+
+default_port: /dev/ttyACM0
+default_port_config:
+  baudrate: 115200
+default_profile: mega2560
