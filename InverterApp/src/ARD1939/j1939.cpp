@@ -87,6 +87,18 @@ struct v06
 };
 struct v06 v18;
 
+/**
+ * Converts two CAN bytes to a float value using specified conversion factor and offset.
+ * @param lowByte The lower byte (LSB)
+ * @param highByte The higher byte (MSB)
+ * @param conversionFactor The factor to multiply the combined bytes by
+ * @param offset The offset to add to the result after applying the conversion factor
+ * @return The converted float value
+ */
+float ConvertCANBytesFloat(uint8_t lowByte, uint8_t highByte, float conversionFactor = 1.0, float offset = 0.0) {
+    uint16_t rawValue = (uint16_t)lowByte + ((uint16_t)highByte << 8);
+    return (rawValue * conversionFactor) + offset;
+}
 
 #if TRANSPORT_PROTOCOL == 1
   #define d01        0
@@ -1206,41 +1218,41 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
     {
       // STATUS1_RELTORQUE_SPEED
       if(CAN_Message[0] == 0x79){
-        InverterState.Avg_Torque_Percent = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.00390625) - 125.0;
+        InverterState.Avg_Torque_Percent = ConvertCANBytesFloat(CAN_Message[2], CAN_Message[3], 0.00390625, -125.0);
         // Check if these machine speeds are different
-        InverterState.Rel_Machine_Speed = ((CAN_Message[4] + (CAN_Message[5] << 8)) * 0.5) - 16000.0;        // Units: RPM
+        InverterState.Rel_Machine_Speed = ConvertCANBytesFloat(CAN_Message[4], CAN_Message[5], 0.5, -16000.0);        // Units: RPM
       }
       // STATUS2_STATE_VOLTAGE
       else if(CAN_Message[0] == 0x77){
         InverterState.MCU_State = CAN_Message[2];
-        InverterState.DC_Bus_Voltage = (CAN_Message[3] + (CAN_Message[4] << 8)) * 0.03125;                   // Units: Volts
+        InverterState.DC_Bus_Voltage = ConvertCANBytesFloat(CAN_Message[3], CAN_Message[4], 0.03125);                   // Units: Volts
         InverterState.Derate_Owner = CAN_Message[5];
         InverterState.Diag_Function = CAN_Message[6] + ((CAN_Message[7] >> 3) << 8);
         InverterState.Diag_Status = CAN_Message[7] % 8; // pulls the last 3 bits from the uint8_t
       }
       // PROGNOSTIC1_RMS_CURRENT
       else if(CAN_Message[0] == 0x7A){
-        InverterState.RMS_Current_Phase_A = (CAN_Message[1] + (CAN_Message[2] << 8)) * 0.0625;               // Units: Amps
-        InverterState.RMS_Current_Phase_B = (CAN_Message[3] + (CAN_Message[4] << 8)) * 0.0625;               // Units: Amps
-        InverterState.RMS_Current_Phase_C = (CAN_Message[5] + (CAN_Message[6] << 8)) * 0.0625;               // Units: Amps
+        InverterState.RMS_Current_Phase_A = ConvertCANBytesFloat(CAN_Message[1], CAN_Message[2], 0.0625);               // Units: Amps
+        InverterState.RMS_Current_Phase_B = ConvertCANBytesFloat(CAN_Message[3], CAN_Message[4], 0.0625);               // Units: Amps
+        InverterState.RMS_Current_Phase_C = ConvertCANBytesFloat(CAN_Message[5], CAN_Message[6], 0.0625);               // Units: Amps
         InverterState.Brake_Resistor_RMS_Current = CAN_Message[7];                                    // Units: Amps
       }
       // PROGNOSTIC2_DIAGNOSTIC
       else if(CAN_Message[0] == 0xF7){
-        InverterState.Brake_Resistance = (CAN_Message[1] + (CAN_Message[2] << 8)) * 0.5;                     // Units: milliOhm
-        InverterState.DC_Link_Capacitance = (CAN_Message[3] + (CAN_Message[4] << 8)) * 0.5;                  // Units: microFarad
-        InverterState.Motor_BEMF = (CAN_Message[5] + (CAN_Message[6] << 8)) * 0.000030517578125;             // Units: Volts/RPM
+        InverterState.Brake_Resistance = ConvertCANBytesFloat(CAN_Message[1], CAN_Message[2], 0.5);                     // Units: milliOhm
+        InverterState.DC_Link_Capacitance = ConvertCANBytesFloat(CAN_Message[3], CAN_Message[4], 0.5);                  // Units: microFarad
+        InverterState.Motor_BEMF = ConvertCANBytesFloat(CAN_Message[5], CAN_Message[6], 0.000030517578125);             // Units: Volts/RPM
         InverterState.EMI_Capacitance = CAN_Message[7] * 32;                                          // Units: nanoFarad
       }
       // PROGNOSTIC3_DIAGNOSTIC
       else if(CAN_Message[0] == 0xF8){
-        InverterState.Machine_Speed_200ms_Avg = ((CAN_Message[1] + (CAN_Message[2] << 8)) * 0.5) - 16000.0;  // Units: RPM
-        InverterState.Mach_Torq_Percent_200ms_Avg = ((CAN_Message[3] + (CAN_Message[4] << 8)) * 0.00390625) - 16000.0; 
+        InverterState.Machine_Speed_200ms_Avg = ConvertCANBytesFloat(CAN_Message[1], CAN_Message[2], 0.5, -16000.0);  // Units: RPM
+        InverterState.Mach_Torq_Percent_200ms_Avg = ConvertCANBytesFloat(CAN_Message[3], CAN_Message[4], 0.00390625, -16000.0); 
       // PROGNOSTIC5_POSITION
       }
       else if(CAN_Message[0] == 0x81){
-        InverterState.Stored_Pos_Offset = (CAN_Message[2] + (CAN_Message[3] << 8)) * 0.0078125;              // Units: Elec. Degrees
-        InverterState.Calculated_Pos_Offset = (CAN_Message[4] + (CAN_Message[5] << 8)) * 0.0078125;          // Units: Elec. Degrees
+        InverterState.Stored_Pos_Offset = ConvertCANBytesFloat(CAN_Message[2], CAN_Message[3], 0.0078125);              // Units: Elec. Degrees
+        InverterState.Calculated_Pos_Offset = ConvertCANBytesFloat(CAN_Message[4], CAN_Message[5], 0.0078125);          // Units: Elec. Degrees
       }
       break;
     }
@@ -1249,22 +1261,21 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
     {
       // STATUS3_ABSTORQUE_SPEED
       if(CAN_Message[0] == 0x00 && CAN_Message[1] == 0x51){
-        InverterState.Avg_Abs_Torque = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.1) - 3200.0;            // Units: Nm
+        InverterState.Avg_Abs_Torque = ConvertCANBytesFloat(CAN_Message[2], CAN_Message[3], 0.1, -3200.0);            // Units: Nm
         // Check if these machine speeds are different
-        InverterState.Abs_Machine_Speed = (float)((long)(CAN_Message[4] + (CAN_Message[5] << 8)) / 2.0) - 16000.0;
-        // Units: RPM
+        InverterState.Abs_Machine_Speed = ConvertCANBytesFloat(CAN_Message[4], CAN_Message[5], 0.5, -16000.0);        // Units: RPM
       }
       // DC_LINK_PWR_STATUS
       else if(CAN_Message[0] == 0x00 && CAN_Message[1] == 0x56){
-        InverterState.Actual_Power = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.001) - 32.0;
-        InverterState.Max_Power_Generating = (CAN_Message[4] + (CAN_Message[5] << 8)) * 0.001;
-        InverterState.Max_Power_Motoring = (CAN_Message[6] + (CAN_Message[7] << 8)) * 0.001;
+        InverterState.Actual_Power = ConvertCANBytesFloat(CAN_Message[2], CAN_Message[3], 0.001, -32.0);
+        InverterState.Max_Power_Generating = ConvertCANBytesFloat(CAN_Message[4], CAN_Message[5], 0.001);
+        InverterState.Max_Power_Motoring = ConvertCANBytesFloat(CAN_Message[6], CAN_Message[7], 0.001);
       }
       // VOLTAGE_RMS1
       else if(CAN_Message[0] == 0x00 && CAN_Message[1] == 0x54){
-        InverterState.RMS_Voltage_Phase_A = (CAN_Message[2] + (CAN_Message[3] << 8)) * 0.03125;               // Units: Amps
-        InverterState.RMS_Voltage_Phase_B = (CAN_Message[4] + (CAN_Message[5] << 8)) * 0.03125;               // Units: Amps
-        InverterState.RMS_Voltage_Phase_C = (CAN_Message[6] + (CAN_Message[7] << 8)) * 0.03125;               // Units: Amps
+        InverterState.RMS_Voltage_Phase_A = ConvertCANBytesFloat(CAN_Message[2], CAN_Message[3], 0.03125);               // Units: Amps
+        InverterState.RMS_Voltage_Phase_B = ConvertCANBytesFloat(CAN_Message[4], CAN_Message[5], 0.03125);               // Units: Amps
+        InverterState.RMS_Voltage_Phase_C = ConvertCANBytesFloat(CAN_Message[6], CAN_Message[7], 0.03125);               // Units: Amps
       }
 
       break;
@@ -1274,8 +1285,8 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
     {
       // STATUS4_TORQUE_PWRSTAGE_OVRLD
       if(CAN_Message[0] == 0x32){
-      InverterState.Neg_Torque_Available = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.1) - 3200.0;        // Units: Nm
-      InverterState.Pos_Torque_Available = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.1) - 3200.0;        // Units: Nm
+      InverterState.Neg_Torque_Available = ConvertCANBytesFloat(CAN_Message[2], CAN_Message[3], 0.1, -3200.0);        // Units: Nm
+      InverterState.Pos_Torque_Available = ConvertCANBytesFloat(CAN_Message[2], CAN_Message[3], 0.1, -3200.0);        // Units: Nm
       // Power Stage Status Values
       // 0 = Outputs Off
       // 1 = Normal Switching
@@ -1296,15 +1307,15 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       }
       // AC_SUPPLY_STATUS
       else if(CAN_Message[0] == 0x31){
-        InverterState.AC_Voltage_Output = CAN_Message[2] + (CAN_Message[3] << 8);                         // Units: Vrms
-        InverterState.AC_Frequency = CAN_Message[4] + (CAN_Message[5] << 8);                              // Units: Hz
-        InverterState.AC_Voltage_Desired = CAN_Message[6] + (CAN_Message[7] << 8);                        // Units: Vrms
+        InverterState.AC_Voltage_Output = (uint32_t)ConvertCANBytesFloat(CAN_Message[2], CAN_Message[3]);                         // Units: Vrms
+        InverterState.AC_Frequency = (uint32_t)ConvertCANBytesFloat(CAN_Message[4], CAN_Message[5]);                              // Units: Hz
+        InverterState.AC_Voltage_Desired = (uint32_t)ConvertCANBytesFloat(CAN_Message[6], CAN_Message[7]);                        // Units: Vrms
       }
       // DC_LINK_PWR_CURRENT_STATUS
       else if(CAN_Message[0] == 0x36){
-        InverterState.Actual_Current = ((CAN_Message[2] + (CAN_Message[3] << 8)) * 0.001) - 32.0;
-        InverterState.Max_Current_Generating = (CAN_Message[4] + (CAN_Message[5] << 8)) * 0.001;
-        InverterState.Max_Current_Motoring = (CAN_Message[6] + (CAN_Message[7] << 8)) * 0.001;
+        InverterState.Actual_Current = ConvertCANBytesFloat(CAN_Message[2], CAN_Message[3], 0.001, -32.0);
+        InverterState.Max_Current_Generating = ConvertCANBytesFloat(CAN_Message[4], CAN_Message[5], 0.001);
+        InverterState.Max_Current_Motoring = ConvertCANBytesFloat(CAN_Message[6], CAN_Message[7], 0.001);
       }
 
       break;
