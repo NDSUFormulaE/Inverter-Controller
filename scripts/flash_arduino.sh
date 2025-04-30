@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 # Get the first Arduino Mega port from arduino-cli board list
 PORT=$(arduino-cli board list | grep "Arduino Mega" | awk '{print $1}')
 
@@ -10,9 +12,7 @@ fi
 
 echo "Found Arduino Mega at $PORT"
 
-# Compile and upload the InverterApp to Arduino Mega
-echo "Compiling InverterApp..."
-arduino-cli compile InverterApp
+${SCRIPT_DIR}/compile_app.sh
 
 if [ $? -eq 0 ]; then
     echo "Uploading to Arduino Mega..."

@@ -11,28 +11,34 @@
 
 extern struct CANVariables InverterState;
 
-uint16_t speed = 0;
+TickType_t last_clear = 0;
+uint8_t lcd_test = 0;
 
-TM1637TinyDisplay speedDisplay(SPD_CLK, SPD_DATA), batteryDisplay(BATT_CLK,BATT_DATA), motorTempDisplay(TEMP_CLK,TEMP_DATA), coolantTempDisplay(COOL_CLK,COOL_DATA);
+#ifdef SEVEN_SEGMENT_DISPLAYS_ENABLED
+TM1637TinyDisplay speedDisplay(SPD_CLK, SPD_DATA), batteryDisplay(BATT_CLK,BATT_DATA), motorTempDisplay(TEMP_CLK,TEMP_DATA), avgTorqueDisplay(TORQUE_CLK,TORQUE_DATA);
+#endif
+
+#ifdef LCD_DISPLAY_ENABLED
 LiquidCrystal_I2C lcd(0x27,20,4);
+#endif
 
 bool GPIOHandler::Init()
 {
-    // Configure all of our GPIOs
-    #ifdef DISPLAYS_ENABLED
-        // ALL OF OUR CODE
-        Serial.println("Starting Displays");
-        speedDisplay.begin();
-        batteryDisplay.begin();
-        motorTempDisplay.begin();
-        coolantTempDisplay.begin();
-        GPIOHandler::LcdInit();
-    #endif
+  #ifdef SEVEN_SEGMENT_DISPLAYS_ENABLED
+    Serial.println("Starting Seven Segment Displays");
+    speedDisplay.begin();
+    batteryDisplay.begin();
+    motorTempDisplay.begin();
+    avgTorqueDisplay.begin();
+  #endif
+
+  #ifdef LCD_DISPLAY_ENABLED
+    Serial.println("Starting LCD Display");
+    LcdInit();
+  #endif
     
-    return true;
+  return true;
 }
-TickType_t last_clear = 0;
-uint8_t lcd_test = 0;
 
 double randomDouble(double minf, double maxf)
 {
@@ -44,21 +50,26 @@ void GPIOHandler::UpdateLCDs() {
 }
 
 void GPIOHandler::UpdateSevenSegments() {
+  #ifdef SEVEN_SEGMENT_DISPLAYS_ENABLED
   speedDisplay.showNumber(int(InverterState.Abs_Machine_Speed));
   batteryDisplay.showNumber(InverterState.DC_Bus_Voltage);
   motorTempDisplay.showNumber(int((InverterState.Motor_Temp_1 + InverterState.Motor_Temp_2 + InverterState.Motor_Temp_3)/3));
-  coolantTempDisplay.showNumber(InverterState.Inverter_Coolant_Temp);
+  avgTorqueDisplay.showNumber(int(InverterState.Avg_Abs_Torque));
+  #endif
 }
 
 bool GPIOHandler::LcdInit()
 {
   //Initialized screen and backlight.
+  #ifdef LCD_DISPLAY_ENABLED
   lcd.init();
   lcd.backlight();
+  #endif
 }
 
 void GPIOHandler::LcdUpdate()
 {
+  #ifdef LCD_DISPLAY_ENABLED
   lcd.clear();
   lcd.print("Codes 0x"); lcd.print(lcd_test, HEX);
   for (int i=1; i<4; i++) {
@@ -68,6 +79,7 @@ void GPIOHandler::LcdUpdate()
     }
   }
   lcd_test+=16;
+  #endif
 }
 
 uint16_t mapToRange(uint16_t x, uint16_t in_min, uint16_t in_max, uint16_t out_min, uint16_t out_max) {
@@ -83,8 +95,33 @@ uint16_t GPIOHandler::GetPedalSpeed()
 
 uint16_t GPIOHandler::GetPedalTorque()
 {
-  int potent_read = analogRead(POT_GPIO);
-  uint16_t mapped_val = map(potent_read, 0, 1023, MIN_TORQUE_VAL, MAX_TORQUE_VAL);
+  int left_apps_read = analogRead(LEFT_APPS_GPIO);
+  if(left_apps_read > LEFT_APPS_MAX_ADC) {
+    left_apps_read = LEFT_APPS_MAX_ADC;
+  }
+  if(left_apps_read < LEFT_APPS_MIN_ADC) {
+    left_apps_read = LEFT_APPS_MIN_ADC;
+  }
+  int right_apps_read = analogRead(RIGHT_APPS_GPIO);
+  if(right_apps_read > RIGHT_APPS_MAX_ADC) {
+    right_apps_read = RIGHT_APPS_MAX_ADC;
+  }
+  if(right_apps_read < RIGHT_APPS_MIN_ADC) {
+    right_apps_read = RIGHT_APPS_MIN_ADC;
+  }
+  long mapped_left_val = map(left_apps_read, LEFT_APPS_MIN_ADC, LEFT_APPS_MAX_ADC, 0, 100);
+  long mapped_right_val = map(right_apps_read, RIGHT_APPS_MIN_ADC, RIGHT_APPS_MAX_ADC, 0, 100);
+  // Serial.print("Left: "); Serial.print(mapped_left_val); Serial.print(" Right: "); Serial.println(mapped_right_val);
+  long diff = abs(mapped_right_val - mapped_left_val);
+  long apps_avg = (mapped_left_val + mapped_right_val) / 2;
+  // TODO: We need to improve this logic so that for any amount of failures here that falls under the safe amount in
+  // the rules that we revert to some average of the last few values instead of setting it to 0.
+  if(diff > 10){
+    apps_avg = 0;
+  }
+  // Serial.print("Average Left/Right APPS Torque Mapped: ");
+  uint16_t mapped_val = mapToRange(apps_avg, 0, 100, MIN_TORQUE_VAL, MAX_TORQUE_VAL);
+  // Serial.println(mapped_val);
   return mapped_val;
 }
 

@@ -69,7 +69,7 @@ extern "C" {
 
 // #undef portUSE_WDTO
 #define portUSE_TIMER0
-#define configTICK_RATE_HZ  200
+#define configTICK_RATE_HZ 200
 // Assumes a PRESCALER value of 1024
 #define portTICK_PERIOD_MS  (F_CPU / ((configTICK_RATE_HZ * 1024UL))) - 1
 

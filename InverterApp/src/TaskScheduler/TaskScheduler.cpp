@@ -40,7 +40,11 @@ int TaskScheduler::Init()
 
     uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
     uint8_t DefaultTorqueArray[] = {0xF4, 0x18, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
+    #ifndef USE_APPS
     TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, INVERTER_CMD_INVERVAL_TICKS, DefaultSpeedArray, INVERTER_CMD_MESSAGE_INDEX);
+    #else
+    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, INVERTER_CMD_INVERVAL_TICKS, DefaultTorqueArray, INVERTER_CMD_MESSAGE_INDEX);
+    #endif
     return 0;
 }
 
@@ -116,7 +120,7 @@ void TaskScheduler::RecieveMessages()
     InverterState.CAN_Bus_Status = j1939.Operate(&MsgId, &PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
     if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FAILED)
     {
-        // Serial.println("Address Claim Failed");
+        Serial.println("Address Claim Failed, resetting CAN stack.");
         TaskScheduler::Init();
     }
     else if (TaskScheduler::GetSourceAddress() == 0xFE && InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED)
@@ -429,21 +433,21 @@ bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
     return true;
 }
 
-void TaskScheduler::UpdateSpeed(uint16_t currentPedalSpeed, int speedMessageIndex)
+void TaskScheduler::UpdateCommandedPower(uint16_t currentCommandedPower, int commandedPowerIndex)
 {
     /**
-     * Updates current speed of the car.
+     * Updates current speed/requested torque of the car.
      *
      * Parameters:
-     *    currentPedalSpeed      (uint16_t): Speed of pedal (RPM).
-     *    speedMessageIndex           (int): Index of the speedMessage in CANTasks array.
+     *    currentCommandedPower      (uint16_t): Commanded power prescaled for either the speed or torque message.
+     *    commandedPowerIndex           (int): Index of the commanded power message in CANTasks array.
      * Returns:
      *    none
      **/
-    uint8_t top_byte = (uint8_t)(currentPedalSpeed % 0x100);
-    uint8_t bottom_byte = (uint8_t)(currentPedalSpeed >> 8);
-    UpdateMsgByte(speedMessageIndex, top_byte, 2);
-    UpdateMsgByte(speedMessageIndex, bottom_byte, 3);
+    uint8_t top_byte = (uint8_t)(currentCommandedPower % 0x100);
+    uint8_t bottom_byte = (uint8_t)(currentCommandedPower >> 8);
+    UpdateMsgByte(commandedPowerIndex, top_byte, 2);
+    UpdateMsgByte(commandedPowerIndex, bottom_byte, 3);
 }
 
 void TaskScheduler::ClearInverterFaults(void)
