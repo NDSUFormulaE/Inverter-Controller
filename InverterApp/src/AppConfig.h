@@ -71,7 +71,7 @@ enum {MAX_CAN_TASKS = 1};
 #define SEVEN_SEGMENT_DISPLAYS_ENABLED
 
 // If LCD displays connected, uncomment next line.
-// #define LCD_DISPLAY_ENABLED
+#define LCD_DISPLAY_ENABLED
 
 // Speed Display Pins
 #define SPD_CLK 22

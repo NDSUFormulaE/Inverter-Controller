@@ -69,7 +69,7 @@ void setup()
         "UpdateLCDs",
         128,
         NULL,
-        4,
+        5,
         NULL
     );
 #endif
@@ -138,7 +138,7 @@ void TaskUpdateLCDs(void * pvParameters)
     {
         gpioMan.UpdateLCDs();
         // Try to make these delays powers of 2.
-        vTaskDelay(pdMS_TO_TICKS(1536));
+        vTaskDelay(pdMS_TO_TICKS(3072));
     }
 }
 
@@ -233,7 +233,7 @@ void TaskPD400InverterStateMachineControl(void * pvParameters)
                     break;
 
                 case MCU_CNTRL_PWR_DOWN:
-                    if (! InverterPowerOffState)
+                    if (!InverterPowerOffState && LastCommandedInverterState != MCU_STDBY)
                     {
                         Serial.println("Inverter in Controlled Power Down State");
                         Serial.println("Inverter Powering Down");
@@ -242,7 +242,7 @@ void TaskPD400InverterStateMachineControl(void * pvParameters)
                     LastCommandedInverterState = MCU_STDBY;
                     break;
                 case MCU_FAIL_SAFE:
-                    if (! InverterPowerOffState)
+                    if (!InverterPowerOffState && LastCommandedInverterState != MCU_STDBY)
                     {
                         Serial.println("Inverter in Fail Safe State");
                         Serial.println("Inverter Powering Down");
