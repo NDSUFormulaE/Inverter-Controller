@@ -63,6 +63,7 @@ bool GPIOHandler::LcdInit()
   //Initialized screen and backlight.
   #ifdef LCD_DISPLAY_ENABLED
   lcd.init();
+  Wire.setClock(400000);
   lcd.backlight();
   #endif
 }
