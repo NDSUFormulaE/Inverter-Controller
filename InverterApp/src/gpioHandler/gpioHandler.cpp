@@ -65,6 +65,10 @@ bool GPIOHandler::LcdInit()
   lcd.init();
   Wire.setClock(400000);
   lcd.backlight();
+  strcpy(InverterState.LCD_Display[0], "ABCDEABCDEABCDEABCDE");
+  strcpy(InverterState.LCD_Display[1], "ABCDEABCDEABCDEABCDE");
+  strcpy(InverterState.LCD_Display[2], "ABCDEABCDEABCDEABCDE");
+  strcpy(InverterState.LCD_Display[3], "ABCDEABCDEABCDEABCDE");
   #endif
 }
 
@@ -72,15 +76,12 @@ void GPIOHandler::LcdUpdate()
 {
   #ifdef LCD_DISPLAY_ENABLED
   lcd.clear();
-  lcd.print("Codes 0x"); lcd.print(lcd_test, HEX);
-  for (int i=1; i<4; i++) {
-    lcd.setCursor(0, i);
-    for (int j=0; j<16; j++) {
-      lcd.printByte(lcd_test+j);
-    }
+  lcd.setCursor(0,0);
+  for (int i=0; i<4; i++) {
+   // lcd.setCursor(0, i);
+    lcd.print(InverterState.LCD_Display[i]);
   }
-  lcd_test+=16;
-  #endif
+   #endif
 }
 
 uint16_t mapToRange(uint16_t x, uint16_t in_min, uint16_t in_max, uint16_t out_min, uint16_t out_max) {
