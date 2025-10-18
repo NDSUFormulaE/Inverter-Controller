@@ -1,5 +1,8 @@
 #!/bin/bash
 
+REPO_ROOT=$(git -C "$(dirname "$0")" rev-parse --show-toplevel) || { echo "Not a git repository"; exit 1; }
+cd "$REPO_ROOT"
+
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # Get the first Arduino Mega port from arduino-cli board list
