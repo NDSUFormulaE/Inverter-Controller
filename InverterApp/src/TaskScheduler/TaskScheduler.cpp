@@ -38,13 +38,27 @@ int TaskScheduler::Init()
                   NAME_INDUSTRY_GROUP,
                   NAME_ARBITRARY_ADDRESS_CAPABLE);
 
-    uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
-    uint8_t DefaultTorqueArray[] = {0xF4, 0x18, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
+    uint8_t DefaultSpeedArray[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+    uint8_t DefaultTorqueArray[] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+    uint8_t DefaultAccumulatorArray[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+    #ifdef INVERTER_CONTROLLER_MODE
     #ifndef USE_APPS
     TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, INVERTER_CMD_INVERVAL_TICKS, DefaultSpeedArray, INVERTER_CMD_MESSAGE_INDEX);
     #else
     TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, INVERTER_CMD_INVERVAL_TICKS, DefaultTorqueArray, INVERTER_CMD_MESSAGE_INDEX);
     #endif
+    #endif
+
+    #ifdef ACCUMULATOR_CONTROLLER_MODE
+    #ifndef USE_APPS
+    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, ACCUMULATOR_CMD_INVERVAL_TICKS, DefaultAccumulatorArray, ACCUMULATOR_CMD_MESSAGE_INDEX);
+    
+    #else
+    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, ACCUMULATOR_CMD_INVERVAL_TICKS, DefaultAccumulatorArray, ACCUMULATOR_CMD_MESSAGE_INDEX);
+    
+    #endif
+    #endif
+
     return 0;
 }
 
@@ -136,6 +150,8 @@ void TaskScheduler::RecieveMessages()
         // DEBUG_PRINTHEX("Priority: ", Priority);
         // DEBUG_PRINTHEX("PGN: ", PGN);
         // DEBUG_PRINTARRAYHEX("Msg: ", Msg, MsgLen);
+        Serial.println("Address Claim Successful.");
+
         j1939.CANInterpret(&PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
     }
 }
@@ -193,6 +209,7 @@ void TaskScheduler::SetupCANTask(uint8_t priority, long PGN, uint8_t destAddr, i
     CANTasks[index].lastRunTime = 0;
 }
 
+#ifdef INVERTER_CONTROLLER_MODE
 void TaskScheduler::EnableDriveMessage(void)
 {
     /**
@@ -218,6 +235,7 @@ void TaskScheduler::DisableDriveMessage(void)
      **/
     CANTasks[INVERTER_CMD_MESSAGE_INDEX].initialized = false;
 }
+#endif
 
 void RemoveCANTask(int taskIndex)
 {
@@ -280,6 +298,48 @@ void TaskScheduler::UpdateMsgByte(int taskIndex, int byte, int indexOfByte)
     CANTasks[taskIndex].task.msg[indexOfByte] = byte;
 }
 
+#ifdef ACCUMULATOR_CONTROLLER_MODE
+
+// int32_t TaskScheduler::GetReady(){
+//     // long ready_pulse = pulseIn(PRE_READY, 1); // pin 53
+//     long ready_pulse = 100;
+//     if ((ready_pulse < 125) & (ready_pulse > 83)){
+//         // Serial.println(ready_pulse);
+//         return 1;
+//     }
+//     else{
+//         // Serial.println(ready_pulse);
+//         return 2;
+//     }
+// }
+
+/** void TaskScheduler::UpdateCommandedPower(uint16_t currentCommandedPower, int commandedPowerIndex)
+     * Updates current speed/requested torque of the car.
+     *
+     * Parameters:
+     *    currentCommandedPower      (uint16_t): Commanded power prescaled for either the speed or torque message.
+     *    commandedPowerIndex           (int): Index of the commanded power message in CANTasks array.
+     **/
+void TaskScheduler::UpdateAccumulatorArray(uint16_t accumulatorValue, int accumulatorIndex, int byteIndex)
+{
+    /**
+     * Updates current speed/requested torque of the car.
+     *
+     * Parameters:
+     *    currentCommandedPower      (uint16_t): Commanded power prescaled for either the speed or torque message.
+     *    commandedPowerIndex           (int): Index of the commanded power message in CANTasks array.
+     * Returns:
+     *    none
+     **/
+    uint8_t top_byte = (uint8_t)(accumulatorValue % 0x100);
+    uint8_t bottom_byte = (uint8_t)(accumulatorValue >> 8);
+    UpdateMsgByte(accumulatorIndex, top_byte, byteIndex); //2
+    UpdateMsgByte(accumulatorIndex, bottom_byte, byteIndex + 1); //3
+}
+
+#endif
+
+#ifdef INVERTER_CONTROLLER_MODE
 bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
 {
 
@@ -462,6 +522,7 @@ void TaskScheduler::ClearInverterFaults(void)
      * Returns:
      *    none
      **/
+    #ifdef INVERTER_CONTROLLER_MODE
     j1939.ClearFaults();
     if (InverterState.MCU_State == MCU_FAULT_CLASSA)
     {
@@ -473,7 +534,23 @@ void TaskScheduler::ClearInverterFaults(void)
         Serial.println("State is MCU Class B");
         TaskScheduler::ChangeState(FAULT_CLASSB_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
     }
+    #endif
+
+    #ifdef ACCUMULATOR_CONTROLLER_MODE
+    j1939.ClearFaults();
+    if (InverterState.MCU_State == MCU_FAULT_CLASSA)
+    {
+        Serial.println("State is MCU Class A");
+        TaskScheduler::ChangeState(FAULT_CLASSA_TO_STDBY, ACCUMULATOR_CMD_MESSAGE_INDEX);
+    }
+    else if (InverterState.MCU_State == MCU_FAULT_CLASSB)
+    {
+        Serial.println("State is MCU Class B");
+        TaskScheduler::ChangeState(FAULT_CLASSB_TO_STDBY, ACCUMULATOR_CMD_MESSAGE_INDEX);
+    }
+    #endif
 }
+#endif
 
 //// Private Functions
 int TaskScheduler::FirstFreeInCANTasks()

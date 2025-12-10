@@ -1321,6 +1321,7 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
     }
     // Shared PGN for STATUS1_RELTORQUE_SPEED, STATUS2_STATE_VOLTAGE, PROGNOSTIC1_RMS_CURRENT, PROGNOSTIC2_DIAGNOSTIC,
     // PROGNOSTIC3_DIAGNOSTIC & PROGNOSTIC5_POSITION
+    #ifdef INVERTER_CONTROLLER_MODE
     case STATUS1_RELTORQUE_SPEED:
     {
       ParseStatus1_RelTorqueSpeed(CAN_Message, InverterState);
@@ -1351,6 +1352,10 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       }
       break;
     }
+    #endif
+    #ifdef ACCUMULATOR_CONTROLLER_MODE
+    // yo shit here
+    #endif
     case DM1:
     {
       InverterState.Protect_Lamp_Status = CAN_Message[0] >> 6;

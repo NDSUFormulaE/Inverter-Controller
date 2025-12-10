@@ -42,6 +42,14 @@ class TaskScheduler
         void UpdateMsgByte(int taskIndex, int byte, int msgIndex);
         void RunLoop();
         uint8_t GetSourceAddress();
+
+
+        #ifdef ACCUMULATOR_CONTROLLER_MODE
+        int32_t GetReady();
+        void UpdateAccumulatorArray(uint16_t accumulatorValue, int accumulatorIndex, int byteIndex);
+        #endif
+
+
         bool ChangeState(int StateTransition, int speedMessageIndex);
         void UpdateCommandedPower(uint16_t CurrentPedalSpeed, int speedMessageIndex);
         void EnableDriveMessage(void);

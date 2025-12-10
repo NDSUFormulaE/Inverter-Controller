@@ -12,8 +12,12 @@
 // Increase this if we actually need more than 1 task.
 enum {MAX_CAN_TASKS = 1};
 
+#define ACCUMULATOR_CONTROLLER_MODE
+#undef INVERTER_CONTROLLER_MODE
+
+#ifdef INVERTER_CONTROLLER_MODE
 #define INVERTER_CMD_MESSAGE_INDEX 0
-#define INVERTER_CMD_INTERVAL_MS 15
+#define INVERTER_CMD_INTERVAL_MS 10
 #define INVERTER_CMD_INVERVAL_TICKS pdMS_TO_TICKS(INVERTER_CMD_INTERVAL_MS)
 #define CAN_CONTROL_LOOP_INTERVAL_MS 8
 #define CAN_CONTROL_LOOP_INTERVAL_TICKS pdMS_TO_TICKS(CAN_CONTROL_LOOP_INTERVAL_MS)
@@ -21,13 +25,26 @@ enum {MAX_CAN_TASKS = 1};
 #if INVERTER_CMD_INTERVAL_MS < CAN_CONTROL_LOOP_INTERVAL_MS
     #error "INVERTER_CMD_INTERVAL_MS must be greater than CAN_CONTROL_LOOP_INTERVAL_MS"
 #endif
+#endif
+
+#ifdef ACCUMULATOR_CONTROLLER_MODE
+#define ACCUMULATOR_CMD_MESSAGE_INDEX 0
+#define ACCUMULATOR_CMD_INTERVAL_MS 10
+#define ACCUMULATOR_CMD_INVERVAL_TICKS pdMS_TO_TICKS(ACCUMULATOR_CMD_INTERVAL_MS)
+#define CAN_CONTROL_LOOP_INTERVAL_MS 8
+#define CAN_CONTROL_LOOP_INTERVAL_TICKS pdMS_TO_TICKS(CAN_CONTROL_LOOP_INTERVAL_MS)
+
+#if ACCUMULATOR_CMD_INTERVAL_MS < CAN_CONTROL_LOOP_INTERVAL_MS
+    #error "ACCUMULATOR_CMD_INTERVAL_MS must be greater than CAN_CONTROL_LOOP_INTERVAL_MS"
+#endif
+#endif
 
 // Enable this value to have TaskClearFaults clear the faults when the
 // inverter goes into either of the Fault Class states.
 // #define AUTO_CLEAR_CAN_FAULTS
 
 // ---------------------------- GPIO CONFIG -------------------------------------
-
+#ifdef INVERTER_CONTROLLER_MODE
 #define POT_GPIO           A3
 #define LEFT_APPS_GPIO     A2
 #define RIGHT_APPS_GPIO    A1
@@ -72,7 +89,24 @@ enum {MAX_CAN_TASKS = 1};
 
 // If LCD displays connected, uncomment next line.
 #define LCD_DISPLAY_ENABLED
+#endif
 
+#ifndef ACCUMULATOR_CONTROLLER_MODE
+#define INVERTER_CONTROLLER_MODE
+#else
+// GPIO stuff here
+// Recieve Pins
+#define PRE_READY 53
+#define MSD 52
+#define INTERLOCKS 51
+
+// Sending Pins
+#define PRECHARGE 49
+#define SHUTDOWN 50
+
+#endif
+
+#ifdef INVERTER_CONTROLLER_MODE
 // Speed Display Pins
 #define SPD_CLK 22
 #define SPD_DATA 24
@@ -90,3 +124,4 @@ enum {MAX_CAN_TASKS = 1};
 #define TORQUE_DATA 36
 
 #endif /* APP_CONFIG_H */
+#endif

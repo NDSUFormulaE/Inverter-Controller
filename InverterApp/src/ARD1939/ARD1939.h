@@ -37,8 +37,8 @@
   #define MSGFILTERS                            0
 #endif
 
-#define SA_PREFERRED                      	0x03
-#define ADDRESSRANGEBOTTOM                	0x04
+#define SA_PREFERRED                      	0x04
+#define ADDRESSRANGEBOTTOM                	0x05
 // Set this lower than the inverter's address, since we wont ever
 // have enough devices on the bus to need this whole range.
 #define ADDRESSRANGETOP                   	0xA1

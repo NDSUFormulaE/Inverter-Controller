@@ -15,6 +15,15 @@ class GPIOHandler
         uint16_t GetPedalTorque();
         void UpdateLCDs();
         void UpdateSevenSegments();
+        #ifdef ACCUMULATOR_CONTROLLER_MODE
+        void SetSHUTDOWN();
+        void SHUTDOWN_NOW();
+        uint16_t GetReady();
+        uint16_t GetInterlocks();
+        uint16_t GetMSD();
+
+        #endif
+
     private:
         uint16_t speed;
         bool LcdInit();
