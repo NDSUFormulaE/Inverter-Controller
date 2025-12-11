@@ -160,6 +160,9 @@ void TaskCANLoop(void * pvParameters)
         #ifndef USE_APPS
             //taskMan.UpdateCommandedPower(gpioMan.GetPedalSpeed(), ACCUMULATOR_CMD_MESSAGE_INDEX);
             // taskMan.GetReady();
+            taskMan.UpdateAccumulatorArray(gpioMan.GetInterlocks(), ACCUMULATOR_CMD_MESSAGE_INDEX, 0);
+            taskMan.UpdateAccumulatorArray(gpioMan.GetMSD(), ACCUMULATOR_CMD_MESSAGE_INDEX, 2);
+
 
         #else
             // Default this one is used

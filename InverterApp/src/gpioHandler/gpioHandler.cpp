@@ -22,6 +22,10 @@ TM1637TinyDisplay speedDisplay(SPD_CLK, SPD_DATA), batteryDisplay(BATT_CLK,BATT_
 LiquidCrystal_I2C lcd(0x27,20,4);
 #endif
 
+#ifdef ACCUMULATOR_CONTROLLER_MODE
+
+#endif
+
 bool GPIOHandler::Init()
 {
   #ifdef SEVEN_SEGMENT_DISPLAYS_ENABLED
@@ -36,9 +40,15 @@ bool GPIOHandler::Init()
     Serial.println("Starting LCD Display");
     LcdInit();
   #endif
+    
+  #ifdef Precharge
+    Serial.println("Pre-Charge ready");
+
+  #endif
 
   #ifdef MSD
     pinMode(MSD, INPUT_PULLUP);
+    //pinMode(SHUTDOWN, OUTPUT);
     Serial.println("MSD ready");
   #endif
 
@@ -47,12 +57,39 @@ bool GPIOHandler::Init()
     Serial.println("Interlocks ready");
   #endif
 
-  pinMode(50, OUTPUT);
-  tone(50, 1000);
-    
   return true;
 }
 
+
+#ifdef ACCUMULATOR_CONTROLLER_MODE
+
+// void SetPrecharge(){
+//   PRECHARGE = 1;
+// }
+
+void GPIOHandler::SetSHUTDOWN(){
+  //Output 10 kHz
+  tone(SHUTDOWN, 1000); // pin 50 
+  
+}
+
+void GPIOHandler::SHUTDOWN_NOW(){
+  noTone(SHUTDOWN);
+  digitalWrite(SHUTDOWN, 0);
+}
+
+uint16_t GPIOHandler::GetReady(){
+  //Ready is 1, precharging is 2
+  // long ready_pulse = pulseIn(PRE_READY, 1); // pin 53
+  long ready_pulse = 100;
+
+  if ((ready_pulse < 125) & (ready_pulse > 83)){
+    return 1;
+  }
+  else{
+    return 2;
+  }
+}
 
 uint16_t GPIOHandler::GetInterlocks(){
   uint16_t IL = digitalRead(INTERLOCKS);
@@ -74,6 +111,9 @@ uint16_t GPIOHandler::GetMSD(){
 
 
 
+#endif
+
+#ifdef INVERTER_CONTROLLER_MODE
 double randomDouble(double minf, double maxf)
 {
   return minf + random(1UL << 31) * (maxf - minf) / (1UL << 31);  // use 1ULL<<63 for max double values)
@@ -171,3 +211,4 @@ uint16_t GPIOHandler::GetClearPin()
     }
     return 0;
 }
+#endif
