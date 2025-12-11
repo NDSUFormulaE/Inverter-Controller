@@ -47,6 +47,8 @@ class TaskScheduler
         void EnableDriveMessage(void);
         void DisableDriveMessage(void);
         void ClearInverterFaults(void);
+
+        void UpdateAccumulatorArray(uint16_t accumulatorValue, int accumulatorIndex, int byteIndex);
     private:
         void SendMessages();
         void RecieveMessages();

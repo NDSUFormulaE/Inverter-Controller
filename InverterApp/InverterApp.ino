@@ -43,14 +43,14 @@ void setup()
         resetFunc(); // If CAN Controller doesnt init correctly, wait 500ms then try again.
     }
 
-    xTaskCreate(
-        TaskClearFaults,
-        "ClearFaults",
-        128,
-        NULL,
-        6,
-        NULL
-    );
+    // xTaskCreate(
+    //     TaskClearFaults,
+    //     "ClearFaults",
+    //     128,
+    //     NULL,
+    //     6,
+    //     NULL
+    // );
 
 #ifdef SEVEN_SEGMENT_DISPLAYS_ENABLED
     xTaskCreate(
@@ -83,14 +83,14 @@ void setup()
         NULL
     );
 
-    xTaskCreate(
-        TaskPD400InverterStateMachineControl,
-        "InverterStateMachineControl",
-        128,
-        NULL,
-        6,
-        NULL
-    );
+    // xTaskCreate(
+    //     TaskPD400InverterStateMachineControl,
+    //     "InverterStateMachineControl",
+    //     128,
+    //     NULL,
+    //     6,
+    //     NULL
+    // );
 
     Serial.println("Application Stack Initialized");
 }
@@ -101,63 +101,86 @@ void loop()
     // are blocked. In our application that shouldn't ever happen.
 }
 
-void TaskClearFaults(void * pvParameters)
-{
-    (void) pvParameters;
-    for (;;)
-    {
-        uint16_t ClearPinVal = gpioMan.GetClearPin();
-        #ifdef AUTO_CLEAR_CAN_FAULTS 
-        if (ClearPinVal || InverterState.MCU_State == MCU_FAULT_CLASSA || InverterState.MCU_State == MCU_FAULT_CLASSB)
-        #else
-        if (ClearPinVal)
-        #endif
-        {
-            taskMan.ClearInverterFaults();
-        }
-        // Try to make these delays powers of 2.
-        vTaskDelay(pdMS_TO_TICKS(2048));
-    }
-}
+// void TaskClearFaults(void * pvParameters)
+// {
+//     (void) pvParameters;
+//     for (;;)
+//     {
+//         uint16_t ClearPinVal = gpioMan.GetClearPin();
+//         #ifdef AUTO_CLEAR_CAN_FAULTS 
+//         if (ClearPinVal || InverterState.MCU_State == MCU_FAULT_CLASSA || InverterState.MCU_State == MCU_FAULT_CLASSB)
+//         #else
+//         if (ClearPinVal)
+//         #endif
+//         {
+//             taskMan.ClearInverterFaults();
+//         }
+//         // Try to make these delays powers of 2.
+//         vTaskDelay(pdMS_TO_TICKS(2048));
+//     }
+// }
 
-void TaskUpdateSevenSegments(void * pvParameters)
-{
-    (void) pvParameters;
-    for (;;)
-    {
-        gpioMan.UpdateSevenSegments();
-        // Try to make these delays powers of 2.
-        vTaskDelay(pdMS_TO_TICKS(256));
-    }
-}
+// void TaskUpdateSevenSegments(void * pvParameters)
+// {
+//     (void) pvParameters;
+//     for (;;)
+//     {
+//         gpioMan.UpdateSevenSegments();
+//         // Try to make these delays powers of 2.
+//         vTaskDelay(pdMS_TO_TICKS(256));
+//     }
+// }
 
-void TaskUpdateLCDs(void * pvParameters)
-{
-    (void) pvParameters;
-    for (;;)
-    {
-        gpioMan.UpdateLCDs();
-        // Try to make these delays powers of 2.
-        vTaskDelay(pdMS_TO_TICKS(3072));
-    }
-}
+// void TaskUpdateLCDs(void * pvParameters)
+// {
+//     (void) pvParameters;
+//     for (;;)
+//     {
+//         gpioMan.UpdateLCDs();
+//         // Try to make these delays powers of 2.
+//         vTaskDelay(pdMS_TO_TICKS(3072));
+//     }
+// }
 
 void TaskCANLoop(void * pvParameters)
 {
     (void) pvParameters;
     for (;;)
     {   
-        // #ifndef USE_APPS
-        //     taskMan.UpdateCommandedPower(gpioMan.GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
-        // #else
-        //     taskMan.UpdateCommandedPower(gpioMan.GetPedalTorque(), INVERTER_CMD_MESSAGE_INDEX);
-        // #endif
+        #ifdef INVERTER_CONTROLLER_MODE
+        #ifndef USE_APPS
+            taskMan.UpdateCommandedPower(gpioMan.GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
+
+        #else
+            taskMan.UpdateCommandedPower(gpioMan.GetPedalTorque(), INVERTER_CMD_MESSAGE_INDEX);
+        #endif
+        #endif
+
+        #ifdef ACCUMULATOR_CONTROLLER_MODE
+        #ifndef USE_APPS
+            //taskMan.UpdateCommandedPower(gpioMan.GetPedalSpeed(), ACCUMULATOR_CMD_MESSAGE_INDEX);
+            // taskMan.GetReady();
+
+        #else
+            // Default this one is used
+            //taskMan.UpdateCommandedPower(gpioMan.GetPedalTorque(), ACCUMULATOR_CMD_MESSAGE_INDEX);
+            // taskMan.GetReady();
+            taskMan.UpdateAccumulatorArray(gpioMan.GetInterlocks(), ACCUMULATOR_CMD_MESSAGE_INDEX, 0);
+            taskMan.UpdateAccumulatorArray(gpioMan.GetMSD(), ACCUMULATOR_CMD_MESSAGE_INDEX, 2);
+            // taskMan.UpdateAccumulatorArray(gpioMan.GetMSD(), 0, 1);
+            // taskMan.UpdateAccumulatorArray(gpioMan.GetInterlocks(), 0, 2);
+
+
+
+        #endif
+        #endif
         taskMan.RunLoop();
         // Try to make these delays powers of 2.
         vTaskDelay(CAN_CONTROL_LOOP_INTERVAL_TICKS);
     }
 }
 
+#ifdef INVERTER_CONTROLLER_MODE
 void TaskPD400InverterStateMachineControl(void * pvParameters)
 {
     (void) pvParameters;
@@ -285,3 +308,4 @@ void TaskPD400InverterStateMachineControl(void * pvParameters)
         vTaskDelay(pdMS_TO_TICKS(256));
     }
 }
+#endif

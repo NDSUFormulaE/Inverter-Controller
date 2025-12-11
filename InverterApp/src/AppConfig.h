@@ -12,15 +12,22 @@
 // Increase this if we actually need more than 1 task.
 enum {MAX_CAN_TASKS = 1};
 
-#define INVERTER_CMD_MESSAGE_INDEX 0
-#define INVERTER_CMD_INTERVAL_MS 15
-#define INVERTER_CMD_INVERVAL_TICKS pdMS_TO_TICKS(INVERTER_CMD_INTERVAL_MS)
+// #define INVERTER_CMD_MESSAGE_INDEX 0
+// #define INVERTER_CMD_INTERVAL_MS 15
+// #define INVERTER_CMD_INVERVAL_TICKS pdMS_TO_TICKS(INVERTER_CMD_INTERVAL_MS)
+// #define CAN_CONTROL_LOOP_INTERVAL_MS 8
+// #define CAN_CONTROL_LOOP_INTERVAL_TICKS pdMS_TO_TICKS(CAN_CONTROL_LOOP_INTERVAL_MS)
+
+#define ACCUMULATOR_CMD_MESSAGE_INDEX 0
+#define ACCUMULATOR_CMD_INTERVAL_MS 10
+#define ACCUMULATOR_CMD_INVERVAL_TICKS pdMS_TO_TICKS(ACCUMULATOR_CMD_INTERVAL_MS)
 #define CAN_CONTROL_LOOP_INTERVAL_MS 8
 #define CAN_CONTROL_LOOP_INTERVAL_TICKS pdMS_TO_TICKS(CAN_CONTROL_LOOP_INTERVAL_MS)
 
-#if INVERTER_CMD_INTERVAL_MS < CAN_CONTROL_LOOP_INTERVAL_MS
-    #error "INVERTER_CMD_INTERVAL_MS must be greater than CAN_CONTROL_LOOP_INTERVAL_MS"
-#endif
+
+// #if INVERTER_CMD_INTERVAL_MS < CAN_CONTROL_LOOP_INTERVAL_MS
+//     #error "INVERTER_CMD_INTERVAL_MS must be greater than CAN_CONTROL_LOOP_INTERVAL_MS"
+// #endif
 
 // Enable this value to have TaskClearFaults clear the faults when the
 // inverter goes into either of the Fault Class states.
@@ -72,6 +79,14 @@ enum {MAX_CAN_TASKS = 1};
 
 // If LCD displays connected, uncomment next line.
 // #define LCD_DISPLAY_ENABLED
+
+#define PRE_READY 53
+#define MSD 52
+#define INTERLOCKS 51
+
+// Sending Pins
+#define PRECHARGE 49
+#define SHUTDOWN 50
 
 // Speed Display Pins
 #define SPD_CLK 22

@@ -41,11 +41,27 @@ int TaskScheduler::Init()
     uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
     uint8_t DefaultTorqueArray[] = {0xF4, 0x18, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
     uint8_t DefaultAccumulatorArray[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+    
+    
+    #ifdef INVERTER_CONTROLLER_MODE
     #ifndef USE_APPS
     TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, INVERTER_CMD_INVERVAL_TICKS, DefaultSpeedArray, INVERTER_CMD_MESSAGE_INDEX);
     #else
-    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, INVERTER_CMD_INVERVAL_TICKS, DefaultAccumulatorArray, INVERTER_CMD_MESSAGE_INDEX);
+    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, INVERTER_CMD_INVERVAL_TICKS, DefaultTorqueArray, INVERTER_CMD_MESSAGE_INDEX);
     #endif
+    #endif
+
+    #ifdef ACCUMULATOR_CONTROLLER_MODE
+    #ifndef USE_APPS
+    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, ACCUMULATOR_CMD_INVERVAL_TICKS, DefaultAccumulatorArray, ACCUMULATOR_CMD_MESSAGE_INDEX);
+    
+    #else
+    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, ACCUMULATOR_CMD_INVERVAL_TICKS, DefaultAccumulatorArray, ACCUMULATOR_CMD_MESSAGE_INDEX);
+    
+    #endif
+    #endif
+
+    
     return 0;
 }
 
@@ -194,31 +210,31 @@ void TaskScheduler::SetupCANTask(uint8_t priority, long PGN, uint8_t destAddr, i
     CANTasks[index].lastRunTime = 0;
 }
 
-void TaskScheduler::EnableDriveMessage(void)
-{
-    /**
-     * Enables the Drive Message at INVERTER_CMD_MESSAGE_INDEX
-     *
-     * Parameters:
-     *     none
-     * Returns:
-     *     none
-     **/
-    CANTasks[INVERTER_CMD_MESSAGE_INDEX].initialized = true;
-}
+// void TaskScheduler::EnableDriveMessage(void)
+// {
+//     /**
+//      * Enables the Drive Message at INVERTER_CMD_MESSAGE_INDEX
+//      *
+//      * Parameters:
+//      *     none
+//      * Returns:
+//      *     none
+//      **/
+//     CANTasks[INVERTER_CMD_MESSAGE_INDEX].initialized = true;
+// }
 
-void TaskScheduler::DisableDriveMessage(void)
-{
-    /**
-     * Disables the Drive Message at INVERTER_CMD_MESSAGE_INDEX
-     *
-     * Parameters:
-     *     none
-     * Returns:
-     *     none
-     **/
-    CANTasks[INVERTER_CMD_MESSAGE_INDEX].initialized = false;
-}
+// void TaskScheduler::DisableDriveMessage(void)
+// {
+//     /**
+//      * Disables the Drive Message at INVERTER_CMD_MESSAGE_INDEX
+//      *
+//      * Parameters:
+//      *     none
+//      * Returns:
+//      *     none
+//      **/
+//     CANTasks[INVERTER_CMD_MESSAGE_INDEX].initialized = false;
+// }
 
 void RemoveCANTask(int taskIndex)
 {
@@ -281,158 +297,176 @@ void TaskScheduler::UpdateMsgByte(int taskIndex, int byte, int indexOfByte)
     CANTasks[taskIndex].task.msg[indexOfByte] = byte;
 }
 
-bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
-{
 
+void TaskScheduler::UpdateAccumulatorArray(uint16_t accumulatorValue, int accumulatorIndex, int byteIndex)
+{
     /**
-     * Transition through the inverter state machine.
-     * State commands can be found in StateTransition.h
-     * Motor Contorl Unit State Definitions can be found in MotorControlUnitState.h
+     * Updates current speed/requested torque of the car.
      *
      * Parameters:
-     *    stateTransition             (int): State transition command from CAN Spec 2.3.3.
-     *    speedMessageIndex           (int): 6th byte of the speed mode in CAN Spec 2.3.1.2.
+     *    currentCommandedPower      (uint16_t): Commanded power prescaled for either the speed or torque message.
+     *    commandedPowerIndex           (int): Index of the commanded power message in CANTasks array.
      * Returns:
-     *    False if InverterState.MCU_State isn't in the commanded start state. True otherwise.
+     *    none
      **/
-
-    int start;
-    int end;
-
-    extern struct CANVariables InverterState;
-
-    switch (stateTransition)
-    {
-    case STDBY_TO_FUNCTIONAL_DIAG:
-        start = MCU_STDBY;
-        break;
-
-    case PWR_READY_TO_PWR_DIAG:
-        start = MCU_PWR_READY;
-        break;
-
-    case DRIVE_READY_TO_NORM_OPS:
-        start = MCU_DRIVE_READY;
-        break;
-
-    case NORM_OPS_TO_DISCHARGE_DIAG:
-        start = MCU_NORM_OPS;
-        break;
-
-    case FAULT_CLASSA_TO_STDBY:
-        start = MCU_FAULT_CLASSA;
-        break;
-
-    case IGNIT_READY_TO_ADV_DIAG_CLASSA:
-        start = MCU_IGNIT_READY;
-        break;
-
-    case FAULT_CLASSA_TO_ADV_DIAG_CLASSA:
-        start = MCU_FAULT_CLASSA;
-        break;
-
-    case FAULT_CLASSB_TO_PWR_READY:
-        start = MCU_FAULT_CLASSB;
-        break;
-
-    case NORM_OPS_TO_DRIVE_READY:
-        start = MCU_NORM_OPS;
-        break;
-
-    case PWR_READY_TO_ADV_DIAG_CLASSB:
-        start = MCU_PWR_READY;
-        break;
-
-    case FAULT_CLASSB_TO_ADV_DIAG_CLASSB:
-        start = MCU_FAULT_CLASSB;
-        break;
-
-    case DRIVE_READY_TO_ADV_DIAG_CLASSB:
-        start = MCU_DRIVE_READY;
-        break;
-
-    case FAULT_CLASSB_TO_FAIL_SAFE:
-        start = MCU_FAULT_CLASSB;
-        break;
-
-    case FAULT_CLASS_B_ADV_DIAG_CLASSA_TO_FAIL_SAFE:
-        start = MCU_ADV_DIAG_CLASSA;
-        break;
-
-    case PWR_READY_TO_DRIVE_READY:
-        start = MCU_PWR_READY;
-        break;
-
-    case STDBY_TO_ADV_DIAG_CLASSA:
-        start = MCU_STDBY;
-        break;
-
-    case STDBY_TO_IGNIT_READY:
-        start = MCU_STDBY;
-        break;
-
-    case ADV_DIAG_CLASSB_TO_PWR_READY:
-        start = MCU_ADV_DIAG_CLASSB;
-        break;
-
-    case ADV_DIAG_CLASSA_TO_STDBY:
-        start = MCU_ADV_DIAG_CLASSA;
-        break;
-
-    case FAULT_CLASSB_TO_STDBY:
-        start = MCU_FAULT_CLASSB;
-        break;
-
-    case IGNIT_READY_TO_STDBY:
-        start = MCU_IGNIT_READY;
-        break;
-
-    case PWR_READY_TO_STDBY:
-        start = MCU_PWR_READY;
-        break;
-
-    case DRIVE_READY_TO_STDBY:
-        start = MCU_DRIVE_READY;
-        break;
-
-    case NORM_OPS_TO_STDBY:
-        start = MCU_NORM_OPS;
-        break;
-
-    case NORM_OPS_TO_PWR_READY:
-        start = MCU_NORM_OPS;
-        break;
-
-    case DRIVE_READY_TO_PWR_READY:
-        start = MCU_DRIVE_READY;
-        break;
-    }
-
-    if (InverterState.MCU_State != start)
-    {
-        return false;
-    }
-
-    uint8_t array[J1939_MSGLEN];
-
-    for (int i = 0; i < J1939_MSGLEN; i++)
-    {
-        array[i] = CANTasks[speedMessageIndex].task.msg[i];
-    }
-
-    array[6] = stateTransition;
-
-    if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED)
-    {
-    j1939.Transmit(CANTasks[speedMessageIndex].task.priority,
-                   CANTasks[speedMessageIndex].task.PGN,
-                   TaskScheduler::GetSourceAddress(),
-                   CANTasks[speedMessageIndex].task.destAddr,
-                   &array[0],
-                   J1939_MSGLEN);
-    }
-    return true;
+    uint8_t top_byte = (uint8_t)(accumulatorValue % 0x100);
+    uint8_t bottom_byte = (uint8_t)(accumulatorValue >> 8);
+    UpdateMsgByte(accumulatorIndex, top_byte, byteIndex); //2
+    UpdateMsgByte(accumulatorIndex, bottom_byte, byteIndex + 1); //3
 }
+
+// bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
+// {
+
+//     /**
+//      * Transition through the inverter state machine.
+//      * State commands can be found in StateTransition.h
+//      * Motor Contorl Unit State Definitions can be found in MotorControlUnitState.h
+//      *
+//      * Parameters:
+//      *    stateTransition             (int): State transition command from CAN Spec 2.3.3.
+//      *    speedMessageIndex           (int): 6th byte of the speed mode in CAN Spec 2.3.1.2.
+//      * Returns:
+//      *    False if InverterState.MCU_State isn't in the commanded start state. True otherwise.
+//      **/
+
+//     int start;
+//     int end;
+
+//     extern struct CANVariables InverterState;
+
+//     switch (stateTransition)
+//     {
+//     case STDBY_TO_FUNCTIONAL_DIAG:
+//         start = MCU_STDBY;
+//         break;
+
+//     case PWR_READY_TO_PWR_DIAG:
+//         start = MCU_PWR_READY;
+//         break;
+
+//     case DRIVE_READY_TO_NORM_OPS:
+//         start = MCU_DRIVE_READY;
+//         break;
+
+//     case NORM_OPS_TO_DISCHARGE_DIAG:
+//         start = MCU_NORM_OPS;
+//         break;
+
+//     case FAULT_CLASSA_TO_STDBY:
+//         start = MCU_FAULT_CLASSA;
+//         break;
+
+//     case IGNIT_READY_TO_ADV_DIAG_CLASSA:
+//         start = MCU_IGNIT_READY;
+//         break;
+
+//     case FAULT_CLASSA_TO_ADV_DIAG_CLASSA:
+//         start = MCU_FAULT_CLASSA;
+//         break;
+
+//     case FAULT_CLASSB_TO_PWR_READY:
+//         start = MCU_FAULT_CLASSB;
+//         break;
+
+//     case NORM_OPS_TO_DRIVE_READY:
+//         start = MCU_NORM_OPS;
+//         break;
+
+//     case PWR_READY_TO_ADV_DIAG_CLASSB:
+//         start = MCU_PWR_READY;
+//         break;
+
+//     case FAULT_CLASSB_TO_ADV_DIAG_CLASSB:
+//         start = MCU_FAULT_CLASSB;
+//         break;
+
+//     case DRIVE_READY_TO_ADV_DIAG_CLASSB:
+//         start = MCU_DRIVE_READY;
+//         break;
+
+//     case FAULT_CLASSB_TO_FAIL_SAFE:
+//         start = MCU_FAULT_CLASSB;
+//         break;
+
+//     case FAULT_CLASS_B_ADV_DIAG_CLASSA_TO_FAIL_SAFE:
+//         start = MCU_ADV_DIAG_CLASSA;
+//         break;
+
+//     case PWR_READY_TO_DRIVE_READY:
+//         start = MCU_PWR_READY;
+//         break;
+
+//     case STDBY_TO_ADV_DIAG_CLASSA:
+//         start = MCU_STDBY;
+//         break;
+
+//     case STDBY_TO_IGNIT_READY:
+//         start = MCU_STDBY;
+//         break;
+
+//     case ADV_DIAG_CLASSB_TO_PWR_READY:
+//         start = MCU_ADV_DIAG_CLASSB;
+//         break;
+
+//     case ADV_DIAG_CLASSA_TO_STDBY:
+//         start = MCU_ADV_DIAG_CLASSA;
+//         break;
+
+//     case FAULT_CLASSB_TO_STDBY:
+//         start = MCU_FAULT_CLASSB;
+//         break;
+
+//     case IGNIT_READY_TO_STDBY:
+//         start = MCU_IGNIT_READY;
+//         break;
+
+//     case PWR_READY_TO_STDBY:
+//         start = MCU_PWR_READY;
+//         break;
+
+//     case DRIVE_READY_TO_STDBY:
+//         start = MCU_DRIVE_READY;
+//         break;
+
+//     case NORM_OPS_TO_STDBY:
+//         start = MCU_NORM_OPS;
+//         break;
+
+//     case NORM_OPS_TO_PWR_READY:
+//         start = MCU_NORM_OPS;
+//         break;
+
+//     case DRIVE_READY_TO_PWR_READY:
+//         start = MCU_DRIVE_READY;
+//         break;
+//     }
+
+//     if (InverterState.MCU_State != start)
+//     {
+//         return false;
+//     }
+
+//     uint8_t array[J1939_MSGLEN];
+
+//     for (int i = 0; i < J1939_MSGLEN; i++)
+//     {
+//         array[i] = CANTasks[speedMessageIndex].task.msg[i];
+//     }
+
+//     array[6] = stateTransition;
+
+//     if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED)
+//     {
+//     j1939.Transmit(CANTasks[speedMessageIndex].task.priority,
+//                    CANTasks[speedMessageIndex].task.PGN,
+//                    TaskScheduler::GetSourceAddress(),
+//                    CANTasks[speedMessageIndex].task.destAddr,
+//                    &array[0],
+//                    J1939_MSGLEN);
+//     }
+//     return true;
+// }
 
 void TaskScheduler::UpdateCommandedPower(uint16_t currentCommandedPower, int commandedPowerIndex)
 {
@@ -451,30 +485,30 @@ void TaskScheduler::UpdateCommandedPower(uint16_t currentCommandedPower, int com
     UpdateMsgByte(commandedPowerIndex, bottom_byte, 3);
 }
 
-void TaskScheduler::ClearInverterFaults(void)
-{
-    /**
-     * Clears Fault Table and sends DM3 && DM11 Messages.
-     * DM3: Clear of Previously Active Diagnostic Trouble Codes
-     * DM11: Clear of Active Diagnostic Trouble Codes
-     *
-     * Parameters:
-     *    none
-     * Returns:
-     *    none
-     **/
-    j1939.ClearFaults();
-    if (InverterState.MCU_State == MCU_FAULT_CLASSA)
-    {
-        Serial.println("State is MCU Class A");
-        TaskScheduler::ChangeState(FAULT_CLASSA_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
-    }
-    else if (InverterState.MCU_State == MCU_FAULT_CLASSB)
-    {
-        Serial.println("State is MCU Class B");
-        TaskScheduler::ChangeState(FAULT_CLASSB_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
-    }
-}
+// void TaskScheduler::ClearInverterFaults(void)
+// {
+//     /**
+//      * Clears Fault Table and sends DM3 && DM11 Messages.
+//      * DM3: Clear of Previously Active Diagnostic Trouble Codes
+//      * DM11: Clear of Active Diagnostic Trouble Codes
+//      *
+//      * Parameters:
+//      *    none
+//      * Returns:
+//      *    none
+//      **/
+//     j1939.ClearFaults();
+//     if (InverterState.MCU_State == MCU_FAULT_CLASSA)
+//     {
+//         Serial.println("State is MCU Class A");
+//         TaskScheduler::ChangeState(FAULT_CLASSA_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
+//     }
+//     else if (InverterState.MCU_State == MCU_FAULT_CLASSB)
+//     {
+//         Serial.println("State is MCU Class B");
+//         TaskScheduler::ChangeState(FAULT_CLASSB_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
+//     }
+// }
 
 //// Private Functions
 int TaskScheduler::FirstFreeInCANTasks()
