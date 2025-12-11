@@ -79,6 +79,7 @@ void TaskScheduler::RunLoop()
      **/
     TaskScheduler::RecieveMessages();
     TaskScheduler::SendMessages();
+
 }
 
 void TaskScheduler::SendMessages()
@@ -104,8 +105,11 @@ void TaskScheduler::SendMessages()
                            &CANTasks[i].task.msg[0],
                            CANTasks[i].task.msgLen);
             CANTasks[i].lastRunTime = current_ticks;
+            // Serial.println(CANTasks[i].task.msg[0]);
+            // Serial.println(current_ticks - (CANTasks[i].lastRunTime));
         }
     }
+    
 }
 
 void TaskScheduler::RecieveMessages()

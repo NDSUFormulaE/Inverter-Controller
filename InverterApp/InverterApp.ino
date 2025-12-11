@@ -159,12 +159,9 @@ void TaskCANLoop(void * pvParameters)
         #endif
 
         #ifdef ACCUMULATOR_CONTROLLER_MODE
-        #ifndef USE_APPS
             //taskMan.UpdateCommandedPower(gpioMan.GetPedalSpeed(), ACCUMULATOR_CMD_MESSAGE_INDEX);
             // taskMan.GetReady();
 
-        #else
-            // Default this one is used
             //taskMan.UpdateCommandedPower(gpioMan.GetPedalTorque(), ACCUMULATOR_CMD_MESSAGE_INDEX);
             // taskMan.GetReady();
             taskMan.UpdateAccumulatorArray(gpioMan.GetInterlocks(), ACCUMULATOR_CMD_MESSAGE_INDEX, 0);
@@ -172,12 +169,9 @@ void TaskCANLoop(void * pvParameters)
             // taskMan.UpdateAccumulatorArray(gpioMan.GetMSD(), 0, 1);
             // taskMan.UpdateAccumulatorArray(gpioMan.GetInterlocks(), 0, 2);
 
-
-
-        #endif
         #endif
 
-
+        // Serial.println("CAN");
         taskMan.RunLoop();
         // Try to make these delays powers of 2.
         vTaskDelay(CAN_CONTROL_LOOP_INTERVAL_TICKS);
