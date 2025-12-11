@@ -120,27 +120,27 @@ void loop()
 //     }
 // }
 
-// void TaskUpdateSevenSegments(void * pvParameters)
-// {
-//     (void) pvParameters;
-//     for (;;)
-//     {
-//         gpioMan.UpdateSevenSegments();
-//         // Try to make these delays powers of 2.
-//         vTaskDelay(pdMS_TO_TICKS(256));
-//     }
-// }
+void TaskUpdateSevenSegments(void * pvParameters)
+{
+    (void) pvParameters;
+    for (;;)
+    {
+        gpioMan.UpdateSevenSegments();
+        // Try to make these delays powers of 2.
+        vTaskDelay(pdMS_TO_TICKS(256));
+    }
+}
 
-// void TaskUpdateLCDs(void * pvParameters)
-// {
-//     (void) pvParameters;
-//     for (;;)
-//     {
-//         gpioMan.UpdateLCDs();
-//         // Try to make these delays powers of 2.
-//         vTaskDelay(pdMS_TO_TICKS(3072));
-//     }
-// }
+void TaskUpdateLCDs(void * pvParameters)
+{
+    (void) pvParameters;
+    for (;;)
+    {
+        gpioMan.UpdateLCDs();
+        // Try to make these delays powers of 2.
+        vTaskDelay(pdMS_TO_TICKS(3072));
+    }
+}
 
 void TaskCANLoop(void * pvParameters)
 {

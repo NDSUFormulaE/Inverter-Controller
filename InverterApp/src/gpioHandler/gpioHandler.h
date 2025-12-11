@@ -10,11 +10,11 @@ class GPIOHandler
 {
     public:
         bool Init(void);
-        // uint16_t GetPedalSpeed();
+        uint16_t GetPedalSpeed();
         uint16_t GetClearPin();
-        // uint16_t GetPedalTorque();
-        // void UpdateLCDs();
-        // void UpdateSevenSegments();
+        uint16_t GetPedalTorque();
+        void UpdateLCDs();
+        void UpdateSevenSegments();
 
         void SetSHUTDOWN();
         void SHUTDOWN_NOW();
