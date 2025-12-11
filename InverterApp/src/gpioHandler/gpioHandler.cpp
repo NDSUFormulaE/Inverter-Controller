@@ -36,6 +36,9 @@ bool GPIOHandler::Init()
     Serial.println("Starting LCD Display");
     LcdInit();
   #endif
+
+  pinMode(50, OUTPUT);
+  tone(50, 1000);
     
   return true;
 }

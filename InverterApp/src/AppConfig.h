@@ -68,10 +68,10 @@ enum {MAX_CAN_TASKS = 1};
 #define CLEAR_INTERVAL_TICKS pdMS_TO_TICKS(CLEAR_INTERVAL_MILLIS)
 
 // If seven segment displays connected, uncomment next line.
-#define SEVEN_SEGMENT_DISPLAYS_ENABLED
+// #define SEVEN_SEGMENT_DISPLAYS_ENABLED
 
 // If LCD displays connected, uncomment next line.
-#define LCD_DISPLAY_ENABLED
+// #define LCD_DISPLAY_ENABLED
 
 // Speed Display Pins
 #define SPD_CLK 22
