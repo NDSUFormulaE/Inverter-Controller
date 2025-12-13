@@ -433,6 +433,8 @@ bool TaskScheduler::ChangeState(int stateTransition, int speedMessageIndex)
     return true;
 }
 
+
+
 void TaskScheduler::UpdateCommandedPower(uint16_t currentCommandedPower, int commandedPowerIndex)
 {
     /**
@@ -448,6 +450,22 @@ void TaskScheduler::UpdateCommandedPower(uint16_t currentCommandedPower, int com
     uint8_t bottom_byte = (uint8_t)(currentCommandedPower >> 8);
     UpdateMsgByte(commandedPowerIndex, top_byte, 2);
     UpdateMsgByte(commandedPowerIndex, bottom_byte, 3);
+}
+void TaskScheduler::UpdateBMS(uint16_t currentCommandedPower, int commandedPowerIndex)
+{
+    /**
+     * Updates current speed/requested torque of the car.
+     *
+     * Parameters:
+     *    currentCommandedPower      (uint16_t): Commanded power prescaled for either the speed or torque message.
+     *    commandedPowerIndex           (int): Index of the commanded power message in CANTasks array.
+     * Returns:
+     *    none
+     **/
+    uint8_t top_byte = (uint8_t)(currentCommandedPower % 0x100);
+    uint8_t bottom_byte = (uint8_t)(currentCommandedPower >> 8);
+    UpdateMsgByte(commandedPowerIndex, top_byte, 4);
+    UpdateMsgByte(commandedPowerIndex, bottom_byte, 5);
 }
 
 void TaskScheduler::ClearInverterFaults(void)

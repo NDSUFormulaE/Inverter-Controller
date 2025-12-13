@@ -13,6 +13,9 @@ class GPIOHandler
         uint16_t GetPedalSpeed();
         uint16_t GetClearPin();
         uint16_t GetPedalTorque();
+        uint16_t GetInterlocks();
+        uint16_t GetMSD();
+
         void UpdateLCDs();
         void UpdateSevenSegments();
     private:

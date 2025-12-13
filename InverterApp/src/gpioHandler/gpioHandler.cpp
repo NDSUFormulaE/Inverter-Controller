@@ -36,6 +36,9 @@ bool GPIOHandler::Init()
     Serial.println("Starting LCD Display");
     LcdInit();
   #endif
+
+  pinMode(49, INPUT_PULLUP);
+  pinMode(48, INPUT_PULLUP);
     
   return true;
 }
@@ -94,6 +97,24 @@ uint16_t GPIOHandler::GetPedalSpeed()
   return mapped_val;
 }
 
+uint16_t GPIOHandler::GetInterlocks(){
+  uint16_t IL = digitalRead(49);
+  if (IL == 0){
+    // Serial.println("interlock");
+    return 0xCDAB;
+  }
+  return 0x1111;
+}
+
+uint16_t GPIOHandler::GetMSD(){
+  uint16_t msd = digitalRead(48);
+  if (msd == 0){
+    // Serial.println("MSD");
+    return 0xCDAB;
+  }
+  return 0x2222;
+}
+
 uint16_t GPIOHandler::GetPedalTorque()
 {
   int left_apps_read = analogRead(LEFT_APPS_GPIO);
@@ -124,6 +145,7 @@ uint16_t GPIOHandler::GetPedalTorque()
   uint16_t mapped_val = mapToRange(apps_avg, 0, 100, MIN_TORQUE_VAL, MAX_TORQUE_VAL);
   // Serial.println(mapped_val);
   return mapped_val;
+
 }
 
 uint16_t GPIOHandler::GetClearPin()

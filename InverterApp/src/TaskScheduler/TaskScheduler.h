@@ -44,6 +44,7 @@ class TaskScheduler
         uint8_t GetSourceAddress();
         bool ChangeState(int StateTransition, int speedMessageIndex);
         void UpdateCommandedPower(uint16_t CurrentPedalSpeed, int speedMessageIndex);
+        void UpdateBMS(uint16_t currentCommandedPower, int commandedPowerIndex);
         void EnableDriveMessage(void);
         void DisableDriveMessage(void);
         void ClearInverterFaults(void);

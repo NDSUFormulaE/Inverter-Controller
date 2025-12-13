@@ -151,6 +151,8 @@ void TaskCANLoop(void * pvParameters)
             taskMan.UpdateCommandedPower(gpioMan.GetPedalSpeed(), INVERTER_CMD_MESSAGE_INDEX);
         #else
             taskMan.UpdateCommandedPower(gpioMan.GetPedalTorque(), INVERTER_CMD_MESSAGE_INDEX);
+            taskMan.UpdateCommandedPower(gpioMan.GetInterlocks(), INVERTER_CMD_MESSAGE_INDEX);
+            taskMan.UpdateBMS(gpioMan.GetMSD(), INVERTER_CMD_MESSAGE_INDEX);
         #endif
         taskMan.RunLoop();
         // Try to make these delays powers of 2.
