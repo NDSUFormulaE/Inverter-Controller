@@ -3,6 +3,7 @@
 #include "../TM1637TinyDisplay/TM1637TinyDisplay.h"
 #include "../LiquidCrystal_I2C/LiquidCrystal_I2C.h"
 #include "../FreeRTOS/src/Arduino_FreeRTOS.h"
+#include "../ARD1939/CAN_SPEC/MotorControlUnitState.h"
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #define printByte(args)  write(args);
@@ -11,9 +12,54 @@
 #endif
 
 extern struct CANVariables InverterState;
+extern struct FaultEntry FaultTable[MAX_FAULTS];
 
 TickType_t last_clear = 0;
-uint8_t lcd_test = 0;
+
+#ifdef LCD_DISPLAY_ENABLED
+// LCD buffer for dirty-checking (20 cols x 4 rows)
+#define LCD_COLS 20
+#define LCD_ROWS 4
+static char lcdBuffer[LCD_ROWS][LCD_COLS + 1];      // Current display content
+static char lcdNewBuffer[LCD_ROWS][LCD_COLS + 1];   // New content to display
+static bool lcdInitialized = false;
+
+// Convert MCU state to short string (max 8 chars for display)
+static const char* getMcuStateStr(uint32_t state) {
+    switch(state) {
+        case MCU_PWR_UP:           return "PWRUP";
+        case MCU_FUNCTIONAL_DIAG:  return "FDIAG";
+        case MCU_FAULT_CLASSA:     return "FAULTA";
+        case MCU_IGNIT_READY:      return "IGNRDY";
+        case MCU_PWR_READY:        return "PWRRDY";
+        case MCU_PWR_DIAG:         return "PDIAG";
+        case MCU_DRIVE_READY:      return "DRVRDY";
+        case MCU_NORM_OPS:         return "NORMOP";
+        case MCU_FAULT_CLASSB:     return "FAULTB";
+        case MCU_CNTRL_PWR_DOWN:   return "PWRDN";
+        case MCU_FAIL_SAFE:        return "FAILSF";
+        case MCU_ADV_DIAG_CLASSA:  return "ADIAGA";
+        case MCU_DISCHARGE_DIAG:   return "DSCHG";
+        case MCU_ADV_DIAG_CLASSB:  return "ADIAGB";
+        default:                   return "UNK";
+    }
+}
+
+// Write a line to the new buffer (pads/truncates to LCD_COLS)
+static void lcdSetLine(uint8_t row, const char* text) {
+    if (row >= LCD_ROWS) return;
+    int i = 0;
+    while (i < LCD_COLS && text[i] != '\0') {
+        lcdNewBuffer[row][i] = text[i];
+        i++;
+    }
+    while (i < LCD_COLS) {
+        lcdNewBuffer[row][i] = ' ';
+        i++;
+    }
+    lcdNewBuffer[row][LCD_COLS] = '\0';
+}
+#endif
 
 #ifdef SEVEN_SEGMENT_DISPLAYS_ENABLED
 TM1637TinyDisplay speedDisplay(SPD_CLK, SPD_DATA), batteryDisplay(BATT_CLK,BATT_DATA), motorTempDisplay(TEMP_CLK,TEMP_DATA), avgTorqueDisplay(TORQUE_CLK,TORQUE_DATA);
@@ -72,19 +118,79 @@ bool GPIOHandler::LcdInit()
 void GPIOHandler::LcdUpdate()
 {
   #ifdef LCD_DISPLAY_ENABLED
-  // Avoid lcd.clear() as it blocks for 2ms+. Instead, overwrite content.
-  lcd.setCursor(0, 0);
-  lcd.print("Codes 0x"); lcd.print(lcd_test, HEX); lcd.print("    ");
-  taskYIELD(); // Yield to let higher priority tasks run
+  char lineBuf[LCD_COLS + 1];
   
-  for (int i=1; i<4; i++) {
-    lcd.setCursor(0, i);
-    for (int j=0; j<16; j++) {
-      lcd.printByte(lcd_test+j);
+  // Initialize buffers on first run
+  if (!lcdInitialized) {
+    for (int r = 0; r < LCD_ROWS; r++) {
+      memset(lcdBuffer[r], ' ', LCD_COLS);
+      lcdBuffer[r][LCD_COLS] = '\0';
+      memset(lcdNewBuffer[r], ' ', LCD_COLS);
+      lcdNewBuffer[r][LCD_COLS] = '\0';
     }
-    taskYIELD(); // Yield after each row to prevent blocking CAN tasks
+    lcdInitialized = true;
   }
-  lcd_test+=16;
+  
+  // Line 1: System Status (CAN bus status, voltage)
+  snprintf(lineBuf, sizeof(lineBuf), "CAN:%s V:%.1f",
+           (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED) ? "OK" : "--",
+           InverterState.DC_Bus_Voltage);
+  lcdSetLine(0, lineBuf);
+  
+  // Line 2: Inverter Status (MCU state, speed, torque)
+  snprintf(lineBuf, sizeof(lineBuf), "%-6s %4dRPM",
+           getMcuStateStr(InverterState.MCU_State),
+           (int)InverterState.Abs_Machine_Speed);
+  lcdSetLine(1, lineBuf);
+  
+  // Lines 3-4: Active faults (SPN:FMI format)
+  char faultLine3[LCD_COLS + 1] = "";
+  char faultLine4[LCD_COLS + 1] = "";
+  int faultCount = 0;
+  int pos3 = 0, pos4 = 0;
+  
+  for (int i = 0; i < MAX_FAULTS && faultCount < 4; i++) {
+    if (FaultTable[i].active) {
+      char faultStr[12];
+      snprintf(faultStr, sizeof(faultStr), "%lu:%u ", FaultTable[i].SPN, FaultTable[i].FMI);
+      int len = strlen(faultStr);
+      
+      if (faultCount < 2 && pos3 + len <= LCD_COLS) {
+        strcat(faultLine3, faultStr);
+        pos3 += len;
+      } else if (faultCount < 4 && pos4 + len <= LCD_COLS) {
+        strcat(faultLine4, faultStr);
+        pos4 += len;
+      }
+      faultCount++;
+    }
+  }
+  
+  if (faultCount == 0) {
+    lcdSetLine(2, "No active faults");
+    lcdSetLine(3, "");
+  } else {
+    lcdSetLine(2, faultLine3);
+    lcdSetLine(3, faultLine4);
+  }
+  
+  // Update only changed characters (dirty-check)
+  for (int row = 0; row < LCD_ROWS; row++) {
+    bool rowChanged = false;
+    for (int col = 0; col < LCD_COLS; col++) {
+      if (lcdBuffer[row][col] != lcdNewBuffer[row][col]) {
+        rowChanged = true;
+        break;
+      }
+    }
+    
+    if (rowChanged) {
+      lcd.setCursor(0, row);
+      lcd.print(lcdNewBuffer[row]);
+      memcpy(lcdBuffer[row], lcdNewBuffer[row], LCD_COLS + 1);
+    }
+    taskYIELD(); // Yield after each row check
+  }
   #endif
 }
 
