@@ -1,6 +1,7 @@
 #include "TaskScheduler.h"
 #include "../ARD1939/CAN_SPEC/StateTransition.h"
 #include "../ARD1939/CAN_SPEC/MotorControlUnitState.h"
+#include "../gpioHandler/gpioHandler.h"
 
 InitializedCANTask CANTasks[MAX_CAN_TASKS];
 ARD1939 j1939;
@@ -120,12 +121,12 @@ void TaskScheduler::RecieveMessages()
     InverterState.CAN_Bus_Status = j1939.Operate(&MsgId, &PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
     if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FAILED)
     {
-        Serial.println("Address Claim Failed, resetting CAN stack.");
+        LcdPrintStatus("CAN Claim Failed");
         TaskScheduler::Init();
     }
     else if (TaskScheduler::GetSourceAddress() == 0xFE && InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED)
     {
-        Serial.println("Claimed Null Address, resetting CAN stack.");
+        LcdPrintStatus("CAN Null Addr");
         TaskScheduler::Init();
     }
     // J1939_MSG_APP means normal Data Packet && J1939_MSG_PROTOCOL means Transport Protocol Announcement.
@@ -465,12 +466,12 @@ void TaskScheduler::ClearInverterFaults(void)
     j1939.ClearFaults();
     if (InverterState.MCU_State == MCU_FAULT_CLASSA)
     {
-        Serial.println("State is MCU Class A");
+        LcdPrintStatus("Clearing ClassA");
         TaskScheduler::ChangeState(FAULT_CLASSA_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
     }
     else if (InverterState.MCU_State == MCU_FAULT_CLASSB)
     {
-        Serial.println("State is MCU Class B");
+        LcdPrintStatus("Clearing ClassB");
         TaskScheduler::ChangeState(FAULT_CLASSB_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
     }
 }

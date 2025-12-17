@@ -92,7 +92,7 @@ void setup()
         NULL
     );
 
-    Serial.println("Application Stack Initialized");
+    LcdPrintStatus("Stack Initialized");
 }
 
 void loop()
@@ -179,7 +179,7 @@ void TaskPD400InverterStateMachineControl(void * pvParameters)
                 case MCU_STDBY:
                     if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
                     {
-                        Serial.println("Inverter in Standby State");
+                        LcdPrintStatus("State: Standby");
                     }
                     
                     taskMan.ChangeState(STDBY_TO_FUNCTIONAL_DIAG, INVERTER_CMD_MESSAGE_INDEX);
@@ -188,8 +188,7 @@ void TaskPD400InverterStateMachineControl(void * pvParameters)
                 case MCU_FUNCTIONAL_DIAG:
                     if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
                     {
-                        Serial.println("Inverter in Functional Diagnostics State");
-                        Serial.println("Inverter will automatically transition to Ignition Ready");
+                        LcdPrintStatus("State: Func Diag");
                     }
                     taskMan.ChangeState(STDBY_TO_IGNIT_READY, INVERTER_CMD_MESSAGE_INDEX);
                     LastCommandedInverterState = MCU_IGNIT_READY;      
@@ -197,17 +196,14 @@ void TaskPD400InverterStateMachineControl(void * pvParameters)
                 case MCU_IGNIT_READY:
                     if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
                     {
-                        Serial.println("Inverter in Ignition Ready State");
-                        Serial.println("Inverter will automatically transition to Power Ready");
-                        Serial.println("Connect HVDC Bus");
+                        LcdPrintStatus("Connect HVDC Bus");
                     }
                     LastCommandedInverterState = MCU_PWR_READY;  
                     break;
                 case MCU_PWR_READY:
                     if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
                     {
-                        Serial.println("Inverter in Power Ready State");
-                        Serial.println("Commanding Inverter to Drive Ready");
+                        LcdPrintStatus("State: Pwr Ready");
                     }
                     taskMan.ChangeState(PWR_READY_TO_DRIVE_READY, INVERTER_CMD_MESSAGE_INDEX);
                     LastCommandedInverterState = MCU_DRIVE_READY;  
@@ -218,8 +214,7 @@ void TaskPD400InverterStateMachineControl(void * pvParameters)
                 case MCU_DRIVE_READY:
                     if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
                     {
-                        Serial.println("Inverter in Drive Ready State");
-                        Serial.println("Commanding Inverter to Normal Operation");
+                        LcdPrintStatus("State: Drive Ready");
                     }
                     taskMan.ChangeState(DRIVE_READY_TO_NORM_OPS, INVERTER_CMD_MESSAGE_INDEX);
                     LastCommandedInverterState = MCU_NORM_OPS; 
@@ -227,7 +222,7 @@ void TaskPD400InverterStateMachineControl(void * pvParameters)
                 case MCU_NORM_OPS:
                     if(InitialState || (LastCommandedInverterState == InverterState.MCU_State && !InverterNormalOpState))
                     {
-                        Serial.println("Inverter in Normal Operation State");
+                        LcdPrintStatus("State: Normal Ops");
                     }
                     InverterNormalOpState = true;
                     break;
@@ -235,8 +230,7 @@ void TaskPD400InverterStateMachineControl(void * pvParameters)
                 case MCU_CNTRL_PWR_DOWN:
                     if (!InverterPowerOffState && LastCommandedInverterState != MCU_STDBY)
                     {
-                        Serial.println("Inverter in Controlled Power Down State");
-                        Serial.println("Inverter Powering Down");
+                        LcdPrintStatus("Powering Down...");
                     }
                     InverterPowerOffState = true;
                     LastCommandedInverterState = MCU_STDBY;
@@ -244,8 +238,7 @@ void TaskPD400InverterStateMachineControl(void * pvParameters)
                 case MCU_FAIL_SAFE:
                     if (!InverterPowerOffState && LastCommandedInverterState != MCU_STDBY)
                     {
-                        Serial.println("Inverter in Fail Safe State");
-                        Serial.println("Inverter Powering Down");
+                        LcdPrintStatus("FAIL SAFE MODE");
                     }
                     InverterPowerOffState = true;
                     LastCommandedInverterState = MCU_STDBY;
@@ -253,14 +246,14 @@ void TaskPD400InverterStateMachineControl(void * pvParameters)
                 case MCU_FAULT_CLASSA:
                     if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
                     {
-                        Serial.println("Inverter in Class A Fault State");
+                        LcdPrintStatus("FAULT CLASS A");
                     }
                     LastCommandedInverterState = MCU_STDBY;
                     break;
                 case MCU_FAULT_CLASSB:
                     if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
                     {
-                        Serial.println("Inverter in Class B Fault State");
+                        LcdPrintStatus("FAULT CLASS B");
                     }
                     LastCommandedInverterState = MCU_STDBY;
                     break;

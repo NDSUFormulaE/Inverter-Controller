@@ -23,6 +23,7 @@ TickType_t last_clear = 0;
 static char lcdBuffer[LCD_ROWS][LCD_COLS + 1];      // Current display content
 static char lcdNewBuffer[LCD_ROWS][LCD_COLS + 1];   // New content to display
 static bool lcdInitialized = false;
+static char lcdStatusLine[LCD_COLS + 1] = "";       // Line 4 status message buffer
 
 // Convert MCU state to short string (max 8 chars for display)
 static const char* getMcuStateStr(uint32_t state) {
@@ -60,6 +61,15 @@ static void lcdSetLine(uint8_t row, const char* text) {
     lcdNewBuffer[row][LCD_COLS] = '\0';
 }
 #endif
+
+// Set a status message to display on line 4 (replaces Serial.println for display)
+void LcdPrintStatus(const char* msg) {
+    #ifdef LCD_DISPLAY_ENABLED
+    strncpy(lcdStatusLine, msg, LCD_COLS);
+    lcdStatusLine[LCD_COLS] = '\0';
+    #endif
+    Serial.println(msg); // Also print to serial for debugging
+}
 
 #ifdef SEVEN_SEGMENT_DISPLAYS_ENABLED
 TM1637TinyDisplay speedDisplay(SPD_CLK, SPD_DATA), batteryDisplay(BATT_CLK,BATT_DATA), motorTempDisplay(TEMP_CLK,TEMP_DATA), avgTorqueDisplay(TORQUE_CLK,TORQUE_DATA);
@@ -143,36 +153,33 @@ void GPIOHandler::LcdUpdate()
            (int)InverterState.Abs_Machine_Speed);
   lcdSetLine(1, lineBuf);
   
-  // Lines 3-4: Active faults (SPN:FMI format)
-  char faultLine3[LCD_COLS + 1] = "";
-  char faultLine4[LCD_COLS + 1] = "";
+  // Line 3: Active faults (SPN:FMI format) - max 2 faults on one line
+  char faultLine[LCD_COLS + 1] = "";
   int faultCount = 0;
-  int pos3 = 0, pos4 = 0;
+  int pos = 0;
   
-  for (int i = 0; i < MAX_FAULTS && faultCount < 4; i++) {
+  for (int i = 0; i < MAX_FAULTS && faultCount < 2; i++) {
     if (FaultTable[i].active) {
       char faultStr[12];
       snprintf(faultStr, sizeof(faultStr), "%lu:%u ", FaultTable[i].SPN, FaultTable[i].FMI);
       int len = strlen(faultStr);
       
-      if (faultCount < 2 && pos3 + len <= LCD_COLS) {
-        strcat(faultLine3, faultStr);
-        pos3 += len;
-      } else if (faultCount < 4 && pos4 + len <= LCD_COLS) {
-        strcat(faultLine4, faultStr);
-        pos4 += len;
+      if (pos + len <= LCD_COLS) {
+        strcat(faultLine, faultStr);
+        pos += len;
+        faultCount++;
       }
-      faultCount++;
     }
   }
   
   if (faultCount == 0) {
     lcdSetLine(2, "No active faults");
-    lcdSetLine(3, "");
   } else {
-    lcdSetLine(2, faultLine3);
-    lcdSetLine(3, faultLine4);
+    lcdSetLine(2, faultLine);
   }
+  
+  // Line 4: Status messages (set via LcdPrintStatus)
+  lcdSetLine(3, lcdStatusLine);
   
   // Update only changed characters (dirty-check)
   for (int row = 0; row < LCD_ROWS; row++) {
