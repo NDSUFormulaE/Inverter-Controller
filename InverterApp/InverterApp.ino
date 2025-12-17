@@ -69,7 +69,7 @@ void setup()
         "UpdateLCDs",
         128,
         NULL,
-        5,
+        2,  // Lower priority than CAN task (4) to prevent LCD from blocking CAN
         NULL
     );
 #endif

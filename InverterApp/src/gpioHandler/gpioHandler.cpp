@@ -2,6 +2,7 @@
 #include "lcd.h" 
 #include "../TM1637TinyDisplay/TM1637TinyDisplay.h"
 #include "../LiquidCrystal_I2C/LiquidCrystal_I2C.h"
+#include "../FreeRTOS/src/Arduino_FreeRTOS.h"
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #define printByte(args)  write(args);
@@ -71,13 +72,17 @@ bool GPIOHandler::LcdInit()
 void GPIOHandler::LcdUpdate()
 {
   #ifdef LCD_DISPLAY_ENABLED
-  lcd.clear();
-  lcd.print("Codes 0x"); lcd.print(lcd_test, HEX);
+  // Avoid lcd.clear() as it blocks for 2ms+. Instead, overwrite content.
+  lcd.setCursor(0, 0);
+  lcd.print("Codes 0x"); lcd.print(lcd_test, HEX); lcd.print("    ");
+  taskYIELD(); // Yield to let higher priority tasks run
+  
   for (int i=1; i<4; i++) {
     lcd.setCursor(0, i);
     for (int j=0; j<16; j++) {
       lcd.printByte(lcd_test+j);
     }
+    taskYIELD(); // Yield after each row to prevent blocking CAN tasks
   }
   lcd_test+=16;
   #endif
