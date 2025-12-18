@@ -51,16 +51,42 @@ def matches_filter(msg, id_pattern=None, data_pattern=None):
 
 def bucket_delta(delta_ms):
     """Assign a delta to a timing bucket."""
-    if delta_ms < 10:
-        return "0-10ms"
+    if delta_ms < 5:
+        return "0-5ms"
+    elif delta_ms < 10:
+        return "5-10ms"
     elif delta_ms < 20:
         return "10-20ms"
+    elif delta_ms < 30:
+        return "20-30ms"
+    elif delta_ms < 40:
+        return "30-40ms"
     elif delta_ms < 50:
-        return "50ms"
+        return "40-50ms"
+    elif delta_ms < 55:
+        return "50-55ms"
+    elif delta_ms < 60:
+        return "55-60ms"
+    elif delta_ms < 65:
+        return "60-65ms"
+    elif delta_ms < 70:
+        return "65-70ms"
+    elif delta_ms < 75:
+        return "70-75ms"
+    elif delta_ms < 80:
+        return "75-80ms"
+    elif delta_ms < 85:
+        return "80-85ms"
+    elif delta_ms < 90:
+        return "85-90ms"
+    elif delta_ms < 95:
+        return "90-95ms"
     elif delta_ms < 100:
-        return "50-100ms"
+        return "95-100ms"
+    elif delta_ms < 150:
+        return "100-150ms"
     elif delta_ms < 200:
-        return "100-200ms"
+        return "150-200ms"
     elif delta_ms < 500:
         return "200-500ms"
     elif delta_ms < 1000:
@@ -138,8 +164,10 @@ def main():
         if args.histogram:
             print("\nTIMING HISTOGRAM")
             print("-" * 40)
-            bucket_order = ["0-10ms", "10-20ms", "50ms", "50-100ms", 
-                          "100-200ms", "200-500ms", "500ms-1s", ">1s"]
+            bucket_order = ["0-5ms", "5-10ms", "10-20ms", "20-30ms", "30-40ms", "40-50ms",
+                          "50-55ms", "55-60ms", "60-65ms", "65-70ms", "70-75ms", 
+                          "75-80ms", "80-85ms", "85-90ms", "90-95ms", "95-100ms",
+                          "100-150ms", "150-200ms", "200-500ms", "500ms-1s", ">1s"]
             max_count = max(buckets.values()) if buckets else 1
             for bucket in bucket_order:
                 cnt = buckets.get(bucket, 0)
