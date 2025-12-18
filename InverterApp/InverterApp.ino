@@ -74,7 +74,7 @@ void setup()
         "UpdateLCDs",
         512,
         NULL,
-        4,  // Lower priority than CAN task (4) to prevent LCD from blocking CAN
+        4,
         NULL
     );
 #endif
@@ -120,8 +120,7 @@ void TaskClearFaults(void * pvParameters)
         {
             taskMan.ClearInverterFaults();
         }
-        // Try to make these delays powers of 2.
-        vTaskDelay(pdMS_TO_TICKS(2048));
+        vTaskDelay(CLEAR_FAULTS_INTERVAL_TICKS);
     }
 }
 
@@ -131,8 +130,7 @@ void TaskUpdateSevenSegments(void * pvParameters)
     for (;;)
     {
         gpioMan.UpdateSevenSegments();
-        // Try to make these delays powers of 2.
-        vTaskDelay(pdMS_TO_TICKS(256));
+        vTaskDelay(SEVEN_SEG_UPDATE_INTERVAL_TICKS);
     }
 }
 
@@ -142,8 +140,7 @@ void TaskUpdateLCDs(void * pvParameters)
     for (;;)
     {
         gpioMan.UpdateLCDs();
-        // Try to make these delays powers of 2.
-        vTaskDelay(pdMS_TO_TICKS(3072));
+        vTaskDelay(LCD_UPDATE_INTERVAL_TICKS);
     }
 }
 
@@ -169,7 +166,8 @@ void TaskPD400InverterStateMachineControl(void * pvParameters)
 
     for (;;)
     {
-        if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED)
+        // Only run state machine when CAN is up and inverter is connected
+        if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED && TaskScheduler::IsInverterConnected())
         {
             if (InverterState.MCU_State != MCU_FAIL_SAFE || InverterState.MCU_State != MCU_CNTRL_PWR_DOWN)
             {
@@ -240,7 +238,6 @@ void TaskPD400InverterStateMachineControl(void * pvParameters)
                 InitialState = false;
             }
         }
-        // Try to make these delays powers of 2.
-        vTaskDelay(pdMS_TO_TICKS(256));
+        vTaskDelay(STATE_MACHINE_INTERVAL_TICKS);
     }
 }

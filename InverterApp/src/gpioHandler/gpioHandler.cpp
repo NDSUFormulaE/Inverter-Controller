@@ -320,7 +320,7 @@ uint16_t GPIOHandler::GetClearPin()
 {
     uint16_t analogReadVal = analogRead(CLEAR_FAULT_GPIO);
     TickType_t current_ticks = xTaskGetTickCount();
-    if(analogReadVal > 500 && ((current_ticks - last_clear) > CLEAR_INTERVAL_TICKS))
+    if(analogReadVal > 500 && ((current_ticks - last_clear) > CLEAR_FAULTS_INTERVAL_TICKS))
     {
         last_clear = current_ticks;
         return analogReadVal;
