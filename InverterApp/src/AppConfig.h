@@ -12,6 +12,13 @@
 // Increase this if we actually need more than 1 task.
 enum {MAX_CAN_TASKS = 1};
 
+// CAN Source Addresses
+#define INVERTER_SOURCE_ADDRESS  0xA2
+#define BMS_SOURCE_ADDRESS       0x00  // TODO: Set to actual BMS source address
+
+// Message timeout threshold (in FreeRTOS ticks)
+#define MSG_TIMEOUT_TICKS pdMS_TO_TICKS(250)
+
 #define INVERTER_CMD_MESSAGE_INDEX 0
 #define INVERTER_CMD_INTERVAL_MS 50
 #define INVERTER_CMD_INVERVAL_TICKS pdMS_TO_TICKS(INVERTER_CMD_INTERVAL_MS)

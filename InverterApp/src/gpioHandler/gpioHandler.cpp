@@ -4,6 +4,7 @@
 #include "../LiquidCrystal_I2C/LiquidCrystal_I2C.h"
 #include "../FreeRTOS/src/Arduino_FreeRTOS.h"
 #include "../ARD1939/CAN_SPEC/MotorControlUnitState.h"
+#include "../ARD1939/CAN_SPEC/CANVariables.h"
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #define printByte(args)  write(args);
@@ -110,10 +111,23 @@ void GPIOHandler::UpdateLCDs() {
 
 void GPIOHandler::UpdateSevenSegments() {
   #ifdef SEVEN_SEGMENT_DISPLAYS_ENABLED
-  speedDisplay.showNumber(int(InverterState.Abs_Machine_Speed));
-  batteryDisplay.showNumber(InverterState.DC_Bus_Voltage);
-  motorTempDisplay.showNumber(int((InverterState.Motor_Temp_1 + InverterState.Motor_Temp_2 + InverterState.Motor_Temp_3)/3));
-  avgTorqueDisplay.showNumber(int(InverterState.Avg_Abs_Torque));
+  // Check if inverter is disconnected (no messages for timeout period)
+  uint32_t now = (uint32_t)xTaskGetTickCount();
+  bool ivtrMissing = (InverterState.Last_Inverter_Msg_Time == 0 || 
+                      (now - InverterState.Last_Inverter_Msg_Time) > MSG_TIMEOUT_TICKS);
+  
+  if (ivtrMissing) {
+    // Blank all displays when inverter disconnected
+    speedDisplay.clear();
+    batteryDisplay.clear();
+    motorTempDisplay.clear();
+    avgTorqueDisplay.clear();
+  } else {
+    speedDisplay.showNumber(int(InverterState.Abs_Machine_Speed));
+    batteryDisplay.showNumber(InverterState.DC_Bus_Voltage);
+    motorTempDisplay.showNumber(int((InverterState.Motor_Temp_1 + InverterState.Motor_Temp_2 + InverterState.Motor_Temp_3)/3));
+    avgTorqueDisplay.showNumber(int(InverterState.Avg_Abs_Torque));
+  }
   #endif
 }
 
@@ -143,36 +157,57 @@ void GPIOHandler::LcdUpdate()
     lcdInitialized = true;
   }
   
-  // Line 1: System Status (CAN bus status)
+  // Line 1: System Status (CAN, BMS, IVTR)
+  uint32_t now = (uint32_t)xTaskGetTickCount();
   
   // Determine CAN status string
+  // EFLG bits: RX1OVR(7) RX0OVR(6) TXBO(5) TXEP(4) RXEP(3) TXWAR(2) RXWAR(1) EWARN(0)
   const char* canStatus;
-  if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FAILED) {
+  uint8_t eflg = InverterState.CAN_Hardware_Error;
+  if (eflg & 0x20) {  // TXBO - bus off
+    canStatus = "BOFF";
+  } else if (eflg & 0x18) {  // TXEP(4) or RXEP(3) - error passive
+    canStatus = "ERRP";
+  } else if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FAILED) {
     canStatus = "FAIL";
   } else if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED && taskMan.GetSourceAddress() == 0xFE) {
     canStatus = "NULL";
   } else if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED) {
-    canStatus = "OK";
+    canStatus = "OK  ";
   } else {
-    canStatus = "--";
+    canStatus = "--  ";
   }
   
-  // Determine BMS status string
+  // Determine BMS status string (with timeout check)
   const char* bmsStatus;
-  if (InverterState.BMS_Status == BMS_STATUS_OK) {
-    bmsStatus = "OK";
+  if (InverterState.Last_BMS_Msg_Time == 0 || (now - InverterState.Last_BMS_Msg_Time) > MSG_TIMEOUT_TICKS) {
+    bmsStatus = "MIS";  // MISSING - no messages received
+  } else if (InverterState.BMS_Status == BMS_STATUS_OK) {
+    bmsStatus = "OK ";
   } else if (InverterState.BMS_Status == BMS_STATUS_FAULT) {
     bmsStatus = "FLT";
   } else {
-    bmsStatus = "--";
+    bmsStatus = "-- ";
   }
   
-  snprintf(lineBuf, sizeof(lineBuf), "CAN:%s BMS:%s %s", canStatus, bmsStatus, getMcuStateStr(InverterState.MCU_State));
+  // Determine Inverter status string (with timeout check)
+  const char* ivtrStatus;
+  bool ivtrMissing = (InverterState.Last_Inverter_Msg_Time == 0 || 
+                      (now - InverterState.Last_Inverter_Msg_Time) > MSG_TIMEOUT_TICKS);
+  if (ivtrMissing) {
+    ivtrStatus = "MIS";  // MISSING - no messages received
+  } else {
+    ivtrStatus = "OK ";
+  }
+  
+  // Line 1: CAN status + MCU State (show UNK if inverter missing)
+  const char* mcuStateStr = ivtrMissing ? "UNK" : getMcuStateStr(InverterState.MCU_State);
+  snprintf(lineBuf, sizeof(lineBuf), "CAN:%s MODE:%s", canStatus, mcuStateStr);
   lcdSetLine(0, lineBuf);
   
-  // Line 2: Inverter Status (MCU state, speed, torque)
-  // Line 4: Status messages (set via LcdPrintStatus)
-  lcdSetLine(1, lcdStatusLine);
+  // Line 2: BMS + Inverter comm status
+  snprintf(lineBuf, sizeof(lineBuf), "IVTR:%s BMS:%s", ivtrStatus, bmsStatus);
+  lcdSetLine(1, lineBuf);
   
   // Lines 3-4: Active faults (SPN:FMI format) - 2 faults per line, 2 lines
   char faultLine1[LCD_COLS + 1] = "";

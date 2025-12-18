@@ -37,13 +37,11 @@ uint8_t canInit(void)
 }// end canInitialize
 
 // ------------------------------------------------------------------------
-// Check CAN controller for error
+// Check CAN controller for error - returns raw EFLG register value
 // ------------------------------------------------------------------------
 uint8_t canCheckError(void)
 {
-  if(CAN0.checkError() == 0)
-    return 0;
-  else return 1;
+  return CAN0.getErrorFlags();
   
 }// end canCheckError
 

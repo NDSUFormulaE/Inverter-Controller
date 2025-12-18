@@ -798,6 +798,15 @@ INT8U MCP_CAN::checkError(void)
 }
 
 /*********************************************************************************************************
+** Function name:           getErrorFlags
+** Descriptions:            return raw EFLG register value for debugging
+*********************************************************************************************************/
+INT8U MCP_CAN::getErrorFlags(void)
+{
+    return mcp2515_readRegister(MCP_EFLG);
+}
+
+/*********************************************************************************************************
 ** Function name:           getCanId
 ** Descriptions:            when receive something ,u can get the can id!!
 *********************************************************************************************************/

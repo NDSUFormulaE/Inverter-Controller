@@ -95,6 +95,8 @@ void TaskScheduler::SendMessages()
     }
 }
 
+extern uint8_t canCheckError(void);
+
 void TaskScheduler::RecieveMessages()
 {
     /**
@@ -118,6 +120,9 @@ void TaskScheduler::RecieveMessages()
     char sString[80];
     // DEBUG_INIT();
 
+    // Check MCP2515 hardware error status (bus-off, error-passive, etc)
+    InverterState.CAN_Hardware_Error = canCheckError();
+    
     InverterState.CAN_Bus_Status = j1939.Operate(&MsgId, &PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
     if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FAILED)
     {

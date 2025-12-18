@@ -38,9 +38,45 @@ counter=0
 MCU_STATES=(00 01 03 04 06 08)
 state_index=0
 
+# Fault state tracking
+fault_active=0
+fault_cycle=0
+FAULT_ON_CYCLES=200   # ~3 seconds with faults active
+FAULT_OFF_CYCLES=400  # ~6 seconds without faults
+
 send_address_claim() {
     # Send address claim response from inverter
     cansend ${CAN_INTERFACE} "${ADDR_CLAIM_ID}#${INVERTER_NAME}"
+}
+
+# Send DM1 fault message using J1939 Transport Protocol
+# DM1 PGN = 0xFECA, but uses TP for multi-packet
+send_dm1_fault() {
+    local occurrence=$1
+    local occ_hex=$(printf "%02X" $occurrence)
+    
+    # Transport Protocol - Connection Management (TP.CM_BAM)
+    # PGN 0xECFF = broadcast announcement
+    # Data: 0x20 (BAM), total bytes (10), num packets (2), 0xFF, PGN LSB, PGN mid, PGN MSB
+    cansend ${CAN_INTERFACE} "1CECFF${SRC_ADDR}#200A0002FFCAFE00"
+    sleep 0.001
+    
+    # Transport Protocol - Data Transfer (TP.DT) packet 1
+    # Sequence 1, then DM1 data: lamp status (0xFF=all off), SPN (3 bytes), FMI, occurrence
+    # Example fault: SPN 520231 (0x7F027), FMI 31
+    cansend ${CAN_INTERFACE} "1CEBFF${SRC_ADDR}#01FFFFA7FAE81FA2"
+    sleep 0.001
+    
+    # TP.DT packet 2 - continuation
+    # SPN 521699 (0x7F5E3), FMI 25, occurrence
+    cansend ${CAN_INTERFACE} "1CEBFF${SRC_ADDR}#02E3E919${occ_hex}FFFFFFFF"
+}
+
+# Send DM1 with no active faults (lamp status all off, no DTCs)
+send_dm1_clear() {
+    # Single frame DM1 - no faults
+    # PGN 0xFECA, 8 bytes: lamp status (6 bytes 0xFF = no lamps), then 0xFF padding
+    cansend ${CAN_INTERFACE} "18FECA${SRC_ADDR}#FFFFFFFFFFFFFFFF"
 }
 
 send_status_messages() {
@@ -108,6 +144,29 @@ while true; do
     # Cycle MCU state every 67 cycles (~1 second)
     if [ $((counter % 67)) -eq 0 ]; then
         state_index=$(( (state_index + 1) % ${#MCU_STATES[@]} ))
+    fi
+    
+    # Fault cycling logic - send faults for a while, then clear them
+    fault_cycle=$((fault_cycle + 1))
+    if [ $fault_active -eq 1 ]; then
+        # Send fault every 10 cycles while active (~150ms)
+        if [ $((counter % 10)) -eq 0 ]; then
+            send_dm1_fault $((counter % 255 + 1))
+        fi
+        # Turn off faults after FAULT_ON_CYCLES
+        if [ $fault_cycle -ge $FAULT_ON_CYCLES ]; then
+            echo "Clearing faults..."
+            send_dm1_clear
+            fault_active=0
+            fault_cycle=0
+        fi
+    else
+        # Turn on faults after FAULT_OFF_CYCLES
+        if [ $fault_cycle -ge $FAULT_OFF_CYCLES ]; then
+            echo "Activating faults..."
+            fault_active=1
+            fault_cycle=0
+        fi
     fi
     
     counter=$((counter + 1))

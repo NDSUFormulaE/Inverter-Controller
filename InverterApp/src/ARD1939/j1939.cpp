@@ -1,11 +1,13 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <SPI.h>
+#include "../FreeRTOS/src/Arduino_FreeRTOS.h"
 
 #include "CAN_SPEC/MotorControlUnitState.h"
 #include "CAN_SPEC/PGN.h"
 #include "ARD1939.h"
 #include "Arduino.h"
+#include "../AppConfig.h"
 
 #define d49                             10
 
@@ -1297,6 +1299,19 @@ void ARD1939::f12(uint8_t v90)
 void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_MessageLen, uint8_t* CAN_DestAddr, uint8_t* CAN_SrcAddr, uint8_t* CAN_Priority){
 
   InverterState.Last_Message = CAN_Message;
+  
+  // Track last time any CAN message was received
+  InverterState.Last_CAN_Msg_Time = xTaskGetTickCount();
+  
+  // Track last message time from inverter
+  if (*CAN_SrcAddr == INVERTER_SOURCE_ADDRESS) {
+    InverterState.Last_Inverter_Msg_Time = xTaskGetTickCount();
+  }
+  // Track last message time from BMS
+  // if (*CAN_SrcAddr == BMS_SOURCE_ADDRESS) {
+  //   InverterState.Last_BMS_Msg_Time = xTaskGetTickCount();
+  // }
+  
   switch(int(*CAN_PGN)){
     case ADDRESS_CLAIM_RESPONSE:
     {
