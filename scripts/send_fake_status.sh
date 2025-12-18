@@ -32,10 +32,18 @@ send_status_messages() {
     local cnt=$1
     
     # Vary some values based on counter for realistic-looking data
-    local speed_low=$(printf "%02X" $((cnt % 256)))
-    local speed_high=$(printf "%02X" $(((cnt / 2) % 256)))
+    # RPM: +-2000 RPM, conversion: RPM = raw * 0.5 - 16000
+    # -2000 RPM -> raw = 28000 (0x6D60), +2000 RPM -> raw = 36000 (0x8CA0)
+    local speed_raw=$(( 28000 + (cnt * 31) % 8001 ))  # Cycles through 28000-36000
+    local speed_low=$(printf "%02X" $((speed_raw % 256)))
+    local speed_high=$(printf "%02X" $((speed_raw / 256)))
     local torque_low=$(printf "%02X" $((128 + (cnt % 64))))
     local temp=$(printf "%02X" $((70 + (cnt % 20))))  # 30-50°C range (value + offset of -40)
+    
+    # DC Bus Voltage: 0-400V, conversion factor 0.03125 -> raw 0-12800 (0x0000-0x3200)
+    local voltage_raw=$(( (cnt * 50) % 12801 ))  # Cycles through 0-12800
+    local voltage_low=$(printf "%02X" $((voltage_raw % 256)))
+    local voltage_high=$(printf "%02X" $((voltage_raw / 256)))
     
     # STATUS1_RELTORQUE_SPEED (subtype 0x79): Torque and Speed
     # msg[0]=0x79, msg[1]=reserved, msg[2:3]=torque%, msg[4:5]=speed, msg[6:7]=reserved
@@ -43,7 +51,7 @@ send_status_messages() {
     
     # STATUS2_STATE_VOLTAGE (subtype 0x77, same PGN as STATUS1)
     # msg[0]=0x77, msg[1]=reserved, msg[2]=MCU_State, msg[3:4]=DC_Bus_Voltage, msg[5]=Derate, msg[6:7]=Diag
-    cansend ${CAN_INTERFACE} "${STATUS1_ID}#77FF01C009000000"
+    cansend ${CAN_INTERFACE} "${STATUS1_ID}#77FF08${voltage_low}${voltage_high}000000"
     
     # PROGNOSTIC1_RMS_CURRENT (subtype 0x7A, same PGN as STATUS1)
     # msg[0]=0x7A, msg[1:2]=Phase A, msg[3:4]=Phase B, msg[5:6]=Phase C, msg[7]=Brake Current
