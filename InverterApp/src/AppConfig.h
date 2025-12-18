@@ -73,6 +73,9 @@ enum {MAX_CAN_TASKS = 1};
 // If LCD displays connected, uncomment next line.
 #define LCD_DISPLAY_ENABLED
 
+// Enable serial debug output (115200 baud)
+// #define DEBUG_SERIAL
+
 // Speed Display Pins
 #define SPD_CLK 22
 #define SPD_DATA 24

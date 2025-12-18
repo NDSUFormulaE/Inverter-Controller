@@ -13,6 +13,7 @@
 
 extern struct CANVariables InverterState;
 extern struct FaultEntry FaultTable[MAX_FAULTS];
+extern TaskScheduler taskMan;
 
 TickType_t last_clear = 0;
 
@@ -142,45 +143,72 @@ void GPIOHandler::LcdUpdate()
     lcdInitialized = true;
   }
   
-  // Line 1: System Status (CAN bus status, voltage)
-  snprintf(lineBuf, sizeof(lineBuf), "CAN:%s V:%.1f",
-           (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED) ? "OK" : "--",
-           InverterState.DC_Bus_Voltage);
+  // Line 1: System Status (CAN bus status)
+  
+  // Determine CAN status string
+  const char* canStatus;
+  if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FAILED) {
+    canStatus = "FAIL";
+  } else if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED && taskMan.GetSourceAddress() == 0xFE) {
+    canStatus = "NULL";
+  } else if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED) {
+    canStatus = "OK";
+  } else {
+    canStatus = "--";
+  }
+  
+  // Determine BMS status string
+  const char* bmsStatus;
+  if (InverterState.BMS_Status == BMS_STATUS_OK) {
+    bmsStatus = "OK";
+  } else if (InverterState.BMS_Status == BMS_STATUS_FAULT) {
+    bmsStatus = "FLT";
+  } else {
+    bmsStatus = "--";
+  }
+  
+  snprintf(lineBuf, sizeof(lineBuf), "CAN:%s BMS:%s %s", canStatus, bmsStatus, getMcuStateStr(InverterState.MCU_State));
   lcdSetLine(0, lineBuf);
   
   // Line 2: Inverter Status (MCU state, speed, torque)
-  snprintf(lineBuf, sizeof(lineBuf), "%-6s %4dRPM",
-           getMcuStateStr(InverterState.MCU_State),
-           (int)InverterState.Abs_Machine_Speed);
-  lcdSetLine(1, lineBuf);
+  // Line 4: Status messages (set via LcdPrintStatus)
+  lcdSetLine(1, lcdStatusLine);
   
-  // Line 3: Active faults (SPN:FMI format) - max 2 faults on one line
-  char faultLine[LCD_COLS + 1] = "";
+  // Lines 3-4: Active faults (SPN:FMI format) - 2 faults per line, 2 lines
+  char faultLine1[LCD_COLS + 1] = "";
+  char faultLine2[LCD_COLS + 1] = "";
   int faultCount = 0;
-  int pos = 0;
+  int pos1 = 0, pos2 = 0;
   
-  for (int i = 0; i < MAX_FAULTS && faultCount < 2; i++) {
+  for (int i = 0; i < MAX_FAULTS && faultCount < 4; i++) {
     if (FaultTable[i].active) {
       char faultStr[12];
       snprintf(faultStr, sizeof(faultStr), "%lu:%u ", FaultTable[i].SPN, FaultTable[i].FMI);
       int len = strlen(faultStr);
       
-      if (pos + len <= LCD_COLS) {
-        strcat(faultLine, faultStr);
-        pos += len;
-        faultCount++;
+      if (faultCount < 2) {
+        if (pos1 + len <= LCD_COLS) {
+          strcat(faultLine1, faultStr);
+          pos1 += len;
+          faultCount++;
+        }
+      } else {
+        if (pos2 + len <= LCD_COLS) {
+          strcat(faultLine2, faultStr);
+          pos2 += len;
+          faultCount++;
+        }
       }
     }
   }
   
   if (faultCount == 0) {
     lcdSetLine(2, "No active faults");
+    lcdSetLine(3, "");
   } else {
-    lcdSetLine(2, faultLine);
+    lcdSetLine(2, faultLine1);
+    lcdSetLine(3, faultLine2);
   }
-  
-  // Line 4: Status messages (set via LcdPrintStatus)
-  lcdSetLine(3, lcdStatusLine);
   
   // Update only changed characters (dirty-check)
   for (int row = 0; row < LCD_ROWS; row++) {

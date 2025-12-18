@@ -121,12 +121,10 @@ void TaskScheduler::RecieveMessages()
     InverterState.CAN_Bus_Status = j1939.Operate(&MsgId, &PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
     if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FAILED)
     {
-        LcdPrintStatus("CAN Claim Failed");
         TaskScheduler::Init();
     }
     else if (TaskScheduler::GetSourceAddress() == 0xFE && InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED)
     {
-        LcdPrintStatus("CAN Null Addr");
         TaskScheduler::Init();
     }
     // J1939_MSG_APP means normal Data Packet && J1939_MSG_PROTOCOL means Transport Protocol Announcement.

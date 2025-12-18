@@ -24,12 +24,28 @@ STATUS1_ID="18FFFE${SRC_ADDR}"      # PGN 0xFFFE
 STATUS3_ID="18FFFB${SRC_ADDR}"      # PGN 0xFFFB
 STATUS4_ID="18FFF4${SRC_ADDR}"      # PGN 0xFFF4
 TEMP2_ID="18FFFF${SRC_ADDR}"        # PGN 0xFFFF
+ADDR_CLAIM_ID="18EE00${SRC_ADDR}"   # PGN 0xEE00 (Address Claim)
+
+# J1939 NAME for fake inverter (8 bytes)
+# This is a fake NAME identifying the simulated inverter
+INVERTER_NAME="00A0000000000000"
 
 # Counter for varying fake data
 counter=0
 
+# MCU States array (normal operational flow)
+# STDBY=0x00, FUNC_DIAG=0x01, IGNIT_READY=0x03, PWR_READY=0x04, DRIVE_READY=0x06, NORM_OPS=0x08
+MCU_STATES=(00 01 03 04 06 08)
+state_index=0
+
+send_address_claim() {
+    # Send address claim response from inverter
+    cansend ${CAN_INTERFACE} "${ADDR_CLAIM_ID}#${INVERTER_NAME}"
+}
+
 send_status_messages() {
     local cnt=$1
+    local mcu_state=$2
     
     # Vary some values based on counter for realistic-looking data
     # RPM: +-2000 RPM, conversion: RPM = raw * 0.5 - 16000
@@ -51,7 +67,7 @@ send_status_messages() {
     
     # STATUS2_STATE_VOLTAGE (subtype 0x77, same PGN as STATUS1)
     # msg[0]=0x77, msg[1]=reserved, msg[2]=MCU_State, msg[3:4]=DC_Bus_Voltage, msg[5]=Derate, msg[6:7]=Diag
-    cansend ${CAN_INTERFACE} "${STATUS1_ID}#77FF08${voltage_low}${voltage_high}000000"
+    cansend ${CAN_INTERFACE} "${STATUS1_ID}#77FF${mcu_state}${voltage_low}${voltage_high}000000"
     
     # PROGNOSTIC1_RMS_CURRENT (subtype 0x7A, same PGN as STATUS1)
     # msg[0]=0x7A, msg[1:2]=Phase A, msg[3:4]=Phase B, msg[5:6]=Phase C, msg[7]=Brake Current
@@ -77,11 +93,25 @@ send_status_messages() {
 echo "Sending fake inverter status messages on ${CAN_INTERFACE} at ${INTERVAL}s intervals"
 echo "Press Ctrl+C to stop"
 
+# Send initial address claim
+echo "Sending address claim from inverter (SA: 0x${SRC_ADDR})..."
+send_address_claim
+
 while true; do
-    send_status_messages $counter
+    send_status_messages $counter ${MCU_STATES[$state_index]}
+    
+    # Re-send address claim every 256 cycles (~4 seconds)
+    if [ $((counter % 256)) -eq 0 ]; then
+        send_address_claim
+    fi
+    
+    # Cycle MCU state every 67 cycles (~1 second)
+    if [ $((counter % 67)) -eq 0 ]; then
+        state_index=$(( (state_index + 1) % ${#MCU_STATES[@]} ))
+    fi
     
     counter=$((counter + 1))
-    if [ $counter -ge 256 ]; then
+    if [ $counter -ge 65536 ]; then
         counter=0
     fi
     

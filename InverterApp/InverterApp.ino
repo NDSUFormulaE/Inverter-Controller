@@ -35,9 +35,14 @@ extern struct CANVariables InverterState;
 //// Functions
 void setup()
 {
+#ifdef DEBUG_SERIAL
     Serial.begin(115200);
+#endif
     if ((taskMan.Init() != 0) || (gpioMan.Init() == false))
     {
+#ifndef DEBUG_SERIAL
+        Serial.begin(115200);
+#endif
         vTaskDelay(pdMS_TO_TICKS(500));
         Serial.println("Resetting");
         resetFunc(); // If CAN Controller doesnt init correctly, wait 500ms then try again.
@@ -177,34 +182,17 @@ void TaskPD400InverterStateMachineControl(void * pvParameters)
             switch(InverterState.MCU_State)
             {
                 case MCU_STDBY:
-                    if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
-                    {
-                        LcdPrintStatus("State: Standby");
-                    }
-                    
                     taskMan.ChangeState(STDBY_TO_FUNCTIONAL_DIAG, INVERTER_CMD_MESSAGE_INDEX);
                     LastCommandedInverterState = MCU_FUNCTIONAL_DIAG;      
                     break;
                 case MCU_FUNCTIONAL_DIAG:
-                    if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
-                    {
-                        LcdPrintStatus("State: Func Diag");
-                    }
                     taskMan.ChangeState(STDBY_TO_IGNIT_READY, INVERTER_CMD_MESSAGE_INDEX);
                     LastCommandedInverterState = MCU_IGNIT_READY;      
                     break;
                 case MCU_IGNIT_READY:
-                    if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
-                    {
-                        LcdPrintStatus("Connect HVDC Bus");
-                    }
                     LastCommandedInverterState = MCU_PWR_READY;  
                     break;
                 case MCU_PWR_READY:
-                    if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
-                    {
-                        LcdPrintStatus("State: Pwr Ready");
-                    }
                     taskMan.ChangeState(PWR_READY_TO_DRIVE_READY, INVERTER_CMD_MESSAGE_INDEX);
                     LastCommandedInverterState = MCU_DRIVE_READY;  
                     break;
@@ -212,49 +200,27 @@ void TaskPD400InverterStateMachineControl(void * pvParameters)
 
                     break;
                 case MCU_DRIVE_READY:
-                    if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
-                    {
-                        LcdPrintStatus("State: Drive Ready");
-                    }
                     taskMan.ChangeState(DRIVE_READY_TO_NORM_OPS, INVERTER_CMD_MESSAGE_INDEX);
                     LastCommandedInverterState = MCU_NORM_OPS; 
                     break;
                 case MCU_NORM_OPS:
-                    if(InitialState || (LastCommandedInverterState == InverterState.MCU_State && !InverterNormalOpState))
-                    {
-                        LcdPrintStatus("State: Normal Ops");
-                    }
                     InverterNormalOpState = true;
                     break;
 
                 case MCU_CNTRL_PWR_DOWN:
-                    if (!InverterPowerOffState && LastCommandedInverterState != MCU_STDBY)
-                    {
-                        LcdPrintStatus("Powering Down...");
-                    }
+                    LcdPrintStatus("Powering Down...");
                     InverterPowerOffState = true;
                     LastCommandedInverterState = MCU_STDBY;
                     break;
                 case MCU_FAIL_SAFE:
-                    if (!InverterPowerOffState && LastCommandedInverterState != MCU_STDBY)
-                    {
-                        LcdPrintStatus("FAIL SAFE MODE");
-                    }
+                    LcdPrintStatus("FAIL SAFE MODE");
                     InverterPowerOffState = true;
                     LastCommandedInverterState = MCU_STDBY;
                     break;
                 case MCU_FAULT_CLASSA:
-                    if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
-                    {
-                        LcdPrintStatus("FAULT CLASS A");
-                    }
                     LastCommandedInverterState = MCU_STDBY;
                     break;
                 case MCU_FAULT_CLASSB:
-                    if(InitialState || LastCommandedInverterState == InverterState.MCU_State)
-                    {
-                        LcdPrintStatus("FAULT CLASS B");
-                    }
                     LastCommandedInverterState = MCU_STDBY;
                     break;
                 case MCU_ADV_DIAG_CLASSA:
