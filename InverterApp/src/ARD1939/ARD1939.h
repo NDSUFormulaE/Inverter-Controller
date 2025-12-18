@@ -152,7 +152,7 @@ class ARD1939
     bool TPMessageRecived(uint8_t num_packets);
     void DecodeTransportProtocol();
     void ClearFaultTable(void);
-    FaultEntry FaultTable[MAX_FAULTS];
+    // FaultTable is now a global variable in j1939.cpp, not a class member
     
 
 #if TRANSPORT_PROTOCOL == 1

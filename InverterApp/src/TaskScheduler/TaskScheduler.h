@@ -47,6 +47,11 @@ class TaskScheduler
         void EnableDriveMessage(void);
         void DisableDriveMessage(void);
         void ClearInverterFaults(void);
+        
+        // Connection status helpers
+        static bool IsInverterConnected(void);
+        static bool IsBmsConnected(void);
+        static bool IsDestinationConnected(uint8_t destAddr);
     private:
         void SendMessages();
         void RecieveMessages();

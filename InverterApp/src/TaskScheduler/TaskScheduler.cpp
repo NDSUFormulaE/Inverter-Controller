@@ -1,6 +1,7 @@
 #include "TaskScheduler.h"
 #include "../ARD1939/CAN_SPEC/StateTransition.h"
 #include "../ARD1939/CAN_SPEC/MotorControlUnitState.h"
+#include "../gpioHandler/gpioHandler.h"
 
 InitializedCANTask CANTasks[MAX_CAN_TASKS];
 ARD1939 j1939;
@@ -41,9 +42,9 @@ int TaskScheduler::Init()
     uint8_t DefaultSpeedArray[] = {0xF4, 0x1B, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
     uint8_t DefaultTorqueArray[] = {0xF4, 0x18, 0x00, 0x7D, 0xFF, 0xFF, 0x00, 0x1F};
     #ifndef USE_APPS
-    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, INVERTER_CMD_INVERVAL_TICKS, DefaultSpeedArray, INVERTER_CMD_MESSAGE_INDEX);
+    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, INVERTER_CMD_INTERVAL_TICKS, DefaultSpeedArray, INVERTER_CMD_MESSAGE_INDEX);
     #else
-    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, INVERTER_CMD_INVERVAL_TICKS, DefaultTorqueArray, INVERTER_CMD_MESSAGE_INDEX);
+    TaskScheduler::SetupCANTask(0x04, COMMAND2_SPEED, 0xA2, 8, INVERTER_CMD_INTERVAL_TICKS, DefaultTorqueArray, INVERTER_CMD_MESSAGE_INDEX);
     #endif
     return 0;
 }
@@ -67,20 +68,56 @@ void TaskScheduler::RunLoop()
     TaskScheduler::SendMessages();
 }
 
+// Connection status helper functions
+bool TaskScheduler::IsInverterConnected(void)
+{
+    TickType_t current_ticks = xTaskGetTickCount();
+    return (InverterState.Last_Inverter_Msg_Time != 0 && 
+            (current_ticks - InverterState.Last_Inverter_Msg_Time) <= MSG_TIMEOUT_TICKS);
+}
+
+bool TaskScheduler::IsBmsConnected(void)
+{
+    TickType_t current_ticks = xTaskGetTickCount();
+    return (InverterState.Last_BMS_Msg_Time != 0 && 
+            (current_ticks - InverterState.Last_BMS_Msg_Time) <= MSG_TIMEOUT_TICKS);
+}
+
+bool TaskScheduler::IsDestinationConnected(uint8_t destAddr)
+{
+    // Check connection status based on destination address
+    if (destAddr == INVERTER_SOURCE_ADDRESS) {
+        return IsInverterConnected();
+    } else if (destAddr == BMS_SOURCE_ADDRESS) {
+        return IsBmsConnected();
+    }
+    // For unknown destinations, assume connected (broadcast, etc.)
+    return true;
+}
+
 void TaskScheduler::SendMessages()
 {
     /**
      * Iterates over the entire CANTasks array and sends any messages which have been initialized.
+     * Skips sending if CAN bus is in error state (ERRP/BOFF) to avoid flooding errors.
+     * Command bytes are zeroed in UpdateCommandedPower() when destination is disconnected.
      *
      * Parameters:
      *     none
      * Returns:
      *     none
      **/
-    TickType_t current_ticks;
+    TickType_t current_ticks = xTaskGetTickCount();
+    
+    // Skip sending if CAN bus is in error-passive or bus-off state
+    // EFLG bits: TXBO(5) TXEP(4) RXEP(3)
+    uint8_t eflg = InverterState.CAN_Hardware_Error;
+    if (eflg & 0x38) {  // TXBO, TXEP, or RXEP
+        return;
+    }
+    
     for (int i = 0; i < MAX_CAN_TASKS; i++)
     {
-        current_ticks = xTaskGetTickCount();
         if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED && CANTasks[i].initialized == true && ((CANTasks[i].lastRunTime == 0) || (current_ticks - CANTasks[i].lastRunTime) >= CANTasks[i].task.interval))
         {
             j1939.Transmit(CANTasks[i].task.priority,
@@ -93,6 +130,8 @@ void TaskScheduler::SendMessages()
         }
     }
 }
+
+extern uint8_t canCheckError(void);
 
 void TaskScheduler::RecieveMessages()
 {
@@ -117,15 +156,16 @@ void TaskScheduler::RecieveMessages()
     char sString[80];
     // DEBUG_INIT();
 
+    // Check MCP2515 hardware error status (bus-off, error-passive, etc)
+    InverterState.CAN_Hardware_Error = canCheckError();
+    
     InverterState.CAN_Bus_Status = j1939.Operate(&MsgId, &PGN, &Msg[0], &MsgLen, &DestAddr, &SrcAddr, &Priority);
     if (InverterState.CAN_Bus_Status == ADDRESSCLAIM_FAILED)
     {
-        Serial.println("Address Claim Failed, resetting CAN stack.");
         TaskScheduler::Init();
     }
     else if (TaskScheduler::GetSourceAddress() == 0xFE && InverterState.CAN_Bus_Status == ADDRESSCLAIM_FINISHED)
     {
-        Serial.println("Claimed Null Address, resetting CAN stack.");
         TaskScheduler::Init();
     }
     // J1939_MSG_APP means normal Data Packet && J1939_MSG_PROTOCOL means Transport Protocol Announcement.
@@ -437,6 +477,7 @@ void TaskScheduler::UpdateCommandedPower(uint16_t currentCommandedPower, int com
 {
     /**
      * Updates current speed/requested torque of the car.
+     * Only sets speed/torque values when inverter is in normal operation mode.
      *
      * Parameters:
      *    currentCommandedPower      (uint16_t): Commanded power prescaled for either the speed or torque message.
@@ -444,6 +485,14 @@ void TaskScheduler::UpdateCommandedPower(uint16_t currentCommandedPower, int com
      * Returns:
      *    none
      **/
+    // Only set speed/torque command when inverter is connected and in normal operation
+    if (!IsInverterConnected() || InverterState.MCU_State != MCU_NORM_OPS) {
+        // Set to zero/neutral when not in normal ops or disconnected
+        UpdateMsgByte(commandedPowerIndex, 0x00, 2);
+        UpdateMsgByte(commandedPowerIndex, 0x7D, 3);  // 0x7D00 = 0 RPM / 0% torque
+        return;
+    }
+    
     uint8_t top_byte = (uint8_t)(currentCommandedPower % 0x100);
     uint8_t bottom_byte = (uint8_t)(currentCommandedPower >> 8);
     UpdateMsgByte(commandedPowerIndex, top_byte, 2);
@@ -465,12 +514,12 @@ void TaskScheduler::ClearInverterFaults(void)
     j1939.ClearFaults();
     if (InverterState.MCU_State == MCU_FAULT_CLASSA)
     {
-        Serial.println("State is MCU Class A");
+        LcdPrintStatus("Clearing ClassA");
         TaskScheduler::ChangeState(FAULT_CLASSA_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
     }
     else if (InverterState.MCU_State == MCU_FAULT_CLASSB)
     {
-        Serial.println("State is MCU Class B");
+        LcdPrintStatus("Clearing ClassB");
         TaskScheduler::ChangeState(FAULT_CLASSB_TO_STDBY, INVERTER_CMD_MESSAGE_INDEX);
     }
 }

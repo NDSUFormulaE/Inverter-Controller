@@ -6,6 +6,9 @@
 #include "..//FreeRTOS/src/Arduino_FreeRTOS.h"
 #include "../TaskScheduler/TaskScheduler.h"
 #include "../AppConfig.h"
+
+// Global function to set LCD line 4 status message (also prints to Serial)
+void LcdPrintStatus(const char* msg);
 class GPIOHandler
 {
     public:
