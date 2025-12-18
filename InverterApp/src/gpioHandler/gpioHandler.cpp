@@ -111,12 +111,7 @@ void GPIOHandler::UpdateLCDs() {
 
 void GPIOHandler::UpdateSevenSegments() {
   #ifdef SEVEN_SEGMENT_DISPLAYS_ENABLED
-  // Check if inverter is disconnected (no messages for timeout period)
-  uint32_t now = (uint32_t)xTaskGetTickCount();
-  bool ivtrMissing = (InverterState.Last_Inverter_Msg_Time == 0 || 
-                      (now - InverterState.Last_Inverter_Msg_Time) > MSG_TIMEOUT_TICKS);
-  
-  if (ivtrMissing) {
+  if (!TaskScheduler::IsInverterConnected()) {
     // Blank all displays when inverter disconnected
     speedDisplay.clear();
     batteryDisplay.clear();
@@ -157,8 +152,9 @@ void GPIOHandler::LcdUpdate()
     lcdInitialized = true;
   }
   
-  // Line 1: System Status (CAN, BMS, IVTR)
-  uint32_t now = (uint32_t)xTaskGetTickCount();
+  // Check connection status using TaskScheduler helpers
+  bool ivtrConnected = TaskScheduler::IsInverterConnected();
+  bool bmsConnected = TaskScheduler::IsBmsConnected();
   
   // Determine CAN status string
   // EFLG bits: RX1OVR(7) RX0OVR(6) TXBO(5) TXEP(4) RXEP(3) TXWAR(2) RXWAR(1) EWARN(0)
@@ -178,9 +174,9 @@ void GPIOHandler::LcdUpdate()
     canStatus = "--  ";
   }
   
-  // Determine BMS status string (with timeout check)
+  // Determine BMS status string
   const char* bmsStatus;
-  if (InverterState.Last_BMS_Msg_Time == 0 || (now - InverterState.Last_BMS_Msg_Time) > MSG_TIMEOUT_TICKS) {
+  if (!bmsConnected) {
     bmsStatus = "MIS";  // MISSING - no messages received
   } else if (InverterState.BMS_Status == BMS_STATUS_OK) {
     bmsStatus = "OK ";
@@ -190,18 +186,11 @@ void GPIOHandler::LcdUpdate()
     bmsStatus = "-- ";
   }
   
-  // Determine Inverter status string (with timeout check)
-  const char* ivtrStatus;
-  bool ivtrMissing = (InverterState.Last_Inverter_Msg_Time == 0 || 
-                      (now - InverterState.Last_Inverter_Msg_Time) > MSG_TIMEOUT_TICKS);
-  if (ivtrMissing) {
-    ivtrStatus = "MIS";  // MISSING - no messages received
-  } else {
-    ivtrStatus = "OK ";
-  }
+  // Determine Inverter status string
+  const char* ivtrStatus = ivtrConnected ? "OK " : "MIS";
   
   // Line 1: CAN status + MCU State (show UNK if inverter missing)
-  const char* mcuStateStr = ivtrMissing ? "UNK" : getMcuStateStr(InverterState.MCU_State);
+  const char* mcuStateStr = ivtrConnected ? getMcuStateStr(InverterState.MCU_State) : "UNK";
   snprintf(lineBuf, sizeof(lineBuf), "CAN:%s MODE:%s", canStatus, mcuStateStr);
   lcdSetLine(0, lineBuf);
   
