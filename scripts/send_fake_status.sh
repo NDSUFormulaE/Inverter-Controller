@@ -48,9 +48,9 @@ send_status_messages() {
     local mcu_state=$2
     
     # Vary some values based on counter for realistic-looking data
-    # RPM: +-2000 RPM, conversion: RPM = raw * 0.5 - 16000
-    # -2000 RPM -> raw = 28000 (0x6D60), +2000 RPM -> raw = 36000 (0x8CA0)
-    local speed_raw=$(( 28000 + (cnt * 31) % 8001 ))  # Cycles through 28000-36000
+    # RPM: 0-3000 RPM, conversion: RPM = raw * 0.5 - 16000
+    # 0 RPM -> raw = 32000 (0x7D00), 3000 RPM -> raw = 38000 (0x9470)
+    local speed_raw=$(( 32000 + (cnt * 23) % 6001 ))  # Cycles through 32000-38000
     local speed_low=$(printf "%02X" $((speed_raw % 256)))
     local speed_high=$(printf "%02X" $((speed_raw / 256)))
     local torque_low=$(printf "%02X" $((128 + (cnt % 64))))
