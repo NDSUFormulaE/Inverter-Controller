@@ -4,7 +4,7 @@
 # Status messages are sent from the inverter (source address 0xA2)
 # to the controller using J1939 CAN protocol
 
-INTERVAL=0.015  # 15 ms between messages
+INTERVAL=0.010  # 10 ms between messages
 CAN_INTERFACE="can0"
 
 # Source address for inverter (0xA2)
@@ -50,33 +50,50 @@ send_address_claim() {
 }
 
 # Send DM1 fault message using J1939 Transport Protocol
-# DM1 PGN = 0xFECA, but uses TP for multi-packet
+# DM1 PGN = 0xFECA
+# DM1 format: 2 lamp bytes + 4 bytes per fault (SPN_lo, SPN_mid, (SPN_hi<<5)|FMI, occurrence)
 send_dm1_fault() {
     local occurrence=$1
     local occ_hex=$(printf "%02X" $occurrence)
     
-    # Transport Protocol - Connection Management (TP.CM_BAM)
-    # PGN 0xECFF = broadcast announcement
-    # Data: 0x20 (BAM), total bytes (10), num packets (2), 0xFF, PGN LSB, PGN mid, PGN MSB
-    cansend ${CAN_INTERFACE} "1CECFF${SRC_ADDR}#200A0002FFCAFE00"
+    # Send 4 faults:
+    # Fault 1: SPN 100 (0x000064), FMI 5
+    # Fault 2: SPN 200 (0x0000C8), FMI 3  
+    # Fault 3: SPN 500 (0x0001F4), FMI 12
+    # Fault 4: SPN 1000 (0x0003E8), FMI 7
+    #
+    # Total bytes: 2 (lamp) + 4*4 (faults) = 18 bytes = 0x12
+    # Packets needed: ceil(18/7) = 3 packets
+    
+    # TP.CM_BAM: 18 bytes total, 3 packets, PGN 0xFECA
+    cansend ${CAN_INTERFACE} "1CECFF${SRC_ADDR}#201200030FCAFE00"
+    sleep 0.002
+    
+    # TP.DT packet 1 (bytes 0-6): lamp1, lamp2, fault1(SPN_lo, SPN_mid, byte4, occ), fault2_SPN_lo
+    # Fault1: SPN=100, FMI=5 -> 64 00 05 occ
+    # Fault2: SPN=200, FMI=3 -> C8 00 03 occ (first byte here)
+    cansend ${CAN_INTERFACE} "1CEBFF${SRC_ADDR}#01FFFF640005${occ_hex}C8"
     sleep 0.001
     
-    # Transport Protocol - Data Transfer (TP.DT) packet 1
-    # Sequence 1, then DM1 data: lamp status (0xFF=all off), SPN (3 bytes), FMI, occurrence
-    # Example fault: SPN 520231 (0x7F027), FMI 31
-    cansend ${CAN_INTERFACE} "1CEBFF${SRC_ADDR}#01FFFFA7FAE81FA2"
+    # TP.DT packet 2 (bytes 7-13): fault2(SPN_mid, byte4, occ), fault3(SPN_lo, SPN_mid, byte4, occ)
+    # Fault2 cont: 00 03 occ
+    # Fault3: SPN=500, FMI=12 -> F4 01 0C occ
+    cansend ${CAN_INTERFACE} "1CEBFF${SRC_ADDR}#020003${occ_hex}F4010C${occ_hex}"
     sleep 0.001
     
-    # TP.DT packet 2 - continuation
-    # SPN 521699 (0x7F5E3), FMI 25, occurrence
-    cansend ${CAN_INTERFACE} "1CEBFF${SRC_ADDR}#02E3E919${occ_hex}FFFFFFFF"
+    # TP.DT packet 3 (bytes 14-17): fault4(SPN_lo, SPN_mid, byte4, occ)
+    # Fault4: SPN=1000, FMI=7 -> E8 03 07 occ
+    cansend ${CAN_INTERFACE} "1CEBFF${SRC_ADDR}#03E80307${occ_hex}FFFFFF"
 }
 
-# Send DM1 with no active faults (lamp status all off, no DTCs)
+# Send DM1 with no active faults via Transport Protocol
 send_dm1_clear() {
-    # Single frame DM1 - no faults
-    # PGN 0xFECA, 8 bytes: lamp status (6 bytes 0xFF = no lamps), then 0xFF padding
-    cansend ${CAN_INTERFACE} "18FECA${SRC_ADDR}#FFFFFFFFFFFFFFFF"
+    # TP.CM_BAM: 2 bytes total (just lamp status), 1 packet, PGN 0xFECA
+    cansend ${CAN_INTERFACE} "1CECFF${SRC_ADDR}#200200010FCAFE00"
+    sleep 0.002
+    
+    # TP.DT packet 1: seq=1, lamp1=0xFF, lamp2=0xFF, padding
+    cansend ${CAN_INTERFACE} "1CEBFF${SRC_ADDR}#01FFFFFFFFFFFF"
 }
 
 send_status_messages() {

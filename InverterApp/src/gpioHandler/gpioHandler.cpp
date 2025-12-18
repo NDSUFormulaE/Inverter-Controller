@@ -217,8 +217,8 @@ void GPIOHandler::LcdUpdate()
   
   for (int i = 0; i < MAX_FAULTS && faultCount < 4; i++) {
     if (FaultTable[i].active) {
-      char faultStr[12];
-      snprintf(faultStr, sizeof(faultStr), "%lu:%u ", FaultTable[i].SPN, FaultTable[i].FMI);
+      char faultStr[16];
+      snprintf(faultStr, sizeof(faultStr), "%lu:%u#%u ", FaultTable[i].SPN, FaultTable[i].FMI, FaultTable[i].OC);
       int len = strlen(faultStr);
       
       if (faultCount < 2) {
@@ -237,8 +237,16 @@ void GPIOHandler::LcdUpdate()
     }
   }
   
+  // Count total active faults for debug
+  int totalActive = 0;
+  for (int i = 0; i < MAX_FAULTS; i++) {
+    if (FaultTable[i].active) totalActive++;
+  }
+  
   if (faultCount == 0) {
-    lcdSetLine(2, "No active faults");
+    char debugLine[LCD_COLS + 1];
+    snprintf(debugLine, sizeof(debugLine), "Faults: %d active", totalActive);
+    lcdSetLine(2, debugLine);
     lcdSetLine(3, "");
   } else {
     lcdSetLine(2, faultLine1);

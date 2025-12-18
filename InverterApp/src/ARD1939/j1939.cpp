@@ -1378,19 +1378,19 @@ void ARD1939::CANInterpret(long* CAN_PGN, uint8_t* CAN_Message, int* CAN_Message
       InverterState.Flash_Red_Stop_Lamp_Status = (CAN_Message[1] >> 2) % 4;
       InverterState.Flash_Multi_Indicator_Lamp_Status = CAN_Message[1] % 4;
 
-      unsigned long SPN_Top = (unsigned long)(CAN_Message[4] >> 5);
-      unsigned long SPN_Mid = (unsigned long)CAN_Message[3];
-      unsigned long SPN_Bottom = CAN_Message[2];
-      unsigned long SPN = ((SPN_Top << 16) + (SPN_Mid << 8) + SPN_Bottom);
-      uint8_t FMI = CAN_Message[4] & 0b11111;
-      uint8_t Occ = CAN_Message[5] & 0b1111111;
-      // Serial.print("FAULT CAN 3: ");
-      // Serial.println(CAN_Message[3]);
-      // Serial.print("FAULT CAN 4: ");
-      // Serial.println(CAN_Message[4]);
-      // Serial.print("FAULT CAN 5: ");
-      // Serial.println(CAN_Message[5]);
-      UpdateAddFault(SPN, FMI, Occ);
+      // Clear existing faults - DM1 represents current active faults
+      ClearFaultTable();
+      
+      // Only parse fault if message length indicates fault data present (>2 bytes for lamp status)
+      if (*CAN_MessageLen > 2) {
+        unsigned long SPN_Top = (unsigned long)(CAN_Message[4] >> 5);
+        unsigned long SPN_Mid = (unsigned long)CAN_Message[3];
+        unsigned long SPN_Bottom = CAN_Message[2];
+        unsigned long SPN = ((SPN_Top << 16) + (SPN_Mid << 8) + SPN_Bottom);
+        uint8_t FMI = CAN_Message[4] & 0b11111;
+        uint8_t Occ = CAN_Message[5] & 0b1111111;
+        UpdateAddFault(SPN, FMI, Occ);
+      }
       break;
     }
 
@@ -1479,6 +1479,9 @@ void ARD1939::DecodeTransportProtocol()
     InverterState.Flash_Red_Stop_Lamp_Status = (TP_Buffer[1] >> 2) % 4;
     InverterState.Flash_Multi_Indicator_Lamp_Status = TP_Buffer[1] % 4;
 
+    // Clear existing faults first - DM1 represents current active faults
+    ClearFaultTable();
+    
     int Num_DM1s = (TP_Num_Bytes - 2)/4;
     for(int i = 0; i < Num_DM1s; i++)
     {
@@ -1595,25 +1598,14 @@ int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
     **/
     int faultIndex = isFaultInArray(SPN, FMI);
     char sString[30];
-    if (FaultTable[faultIndex].active != 0){
-      if(faultIndex > -1)
+    
+    if (faultIndex > -1)
+    {
+      // Fault already exists, update occurrence if changed
+      if (FaultTable[faultIndex].OC != Occurance && Occurance != 0)
       {
-        if (FaultTable[faultIndex].OC != Occurance && Occurance != 0)
-        {
-          FaultTable[faultIndex].OC = Occurance;
-          Serial.print("FAULT UPDATE - SPN: ");
-          sprintf(sString, "%lu ", SPN);
-          Serial.print(sString);
-          Serial.print(" FMI: ");
-          Serial.print(FMI);
-          Serial.print(" Occ: ");
-          Serial.println(Occurance);
-        }
-      }
-      else
-      {
-        AddNewFault(SPN, FMI, Occurance);
-        Serial.print("FAULT NEW - SPN: ");
+        FaultTable[faultIndex].OC = Occurance;
+        Serial.print("FAULT UPDATE - SPN: ");
         sprintf(sString, "%lu ", SPN);
         Serial.print(sString);
         Serial.print(" FMI: ");
@@ -1621,6 +1613,18 @@ int ARD1939::UpdateAddFault(unsigned long SPN, uint8_t FMI, uint8_t Occurance)
         Serial.print(" Occ: ");
         Serial.println(Occurance);
       }
+    }
+    else
+    {
+      // New fault, add it
+      faultIndex = AddNewFault(SPN, FMI, Occurance);
+      Serial.print("FAULT NEW - SPN: ");
+      sprintf(sString, "%lu ", SPN);
+      Serial.print(sString);
+      Serial.print(" FMI: ");
+      Serial.print(FMI);
+      Serial.print(" Occ: ");
+      Serial.println(Occurance);
     }
     return faultIndex;
 }
