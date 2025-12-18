@@ -64,7 +64,8 @@ static void lcdSetLine(uint8_t row, const char* text) {
 
 // Set a status message to display on line 4 (replaces Serial.println for display)
 void LcdPrintStatus(const char* msg) {
-    #ifdef LCD_DISPLAY_ENABLED
+    #ifdef LCD_DISPLAY_ENABLED.
+    Serial.println(msg); // Also print to serial for debugging
     strncpy(lcdStatusLine, msg, LCD_COLS);
     lcdStatusLine[LCD_COLS] = '\0';
     #endif

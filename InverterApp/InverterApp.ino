@@ -67,9 +67,9 @@ void setup()
     xTaskCreate(
         TaskUpdateLCDs,
         "UpdateLCDs",
-        128,
+        512,
         NULL,
-        2,  // Lower priority than CAN task (4) to prevent LCD from blocking CAN
+        4,  // Lower priority than CAN task (4) to prevent LCD from blocking CAN
         NULL
     );
 #endif
